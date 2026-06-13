@@ -26,6 +26,7 @@ export function createStudyAppElements() {
     answerInput: document.querySelector("#answer-input"),
     showToolsToggle: document.querySelector("#show-tools-toggle"),
     disableFlipAnimationToggle: document.querySelector("#disable-flip-animation-toggle"),
+    themeSelect: document.querySelector("#theme-select"),
     partSelect: document.querySelector("#part-select"),
     partField: document.querySelector("#part-field"),
   };

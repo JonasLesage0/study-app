@@ -41,6 +41,7 @@ export class UiSettingsStore {
       selectedMode: "flashcards",
       selectedPart: ALL_PARTS_VALUE,
       disableFlipAnimation: true,
+      theme: "navy",
     };
 
     try {
@@ -73,10 +74,26 @@ export class UiSettingsStore {
           typeof parsed?.disableFlipAnimation === "boolean"
             ? parsed.disableFlipAnimation
             : defaultSettings.disableFlipAnimation,
+        theme: this.normalizeTheme(parsed, defaultSettings.theme),
       };
     } catch {
       return defaultSettings;
     }
+  }
+
+  normalizeTheme(parsed, fallbackTheme) {
+    if (typeof parsed?.theme === "string") {
+      const normalizedTheme = parsed.theme.trim();
+      if (normalizedTheme === "white" || normalizedTheme === "navy" || normalizedTheme === "dark-modern") {
+        return normalizedTheme;
+      }
+    }
+
+    if (typeof parsed?.darkMode === "boolean") {
+      return parsed.darkMode ? "dark-modern" : fallbackTheme;
+    }
+
+    return fallbackTheme;
   }
 
   save(settings) {

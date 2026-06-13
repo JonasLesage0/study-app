@@ -70,6 +70,12 @@ export class StudyApp {
       this.applyUiSettings();
     });
 
+    this.elements.themeSelect.addEventListener("change", (event) => {
+      this.uiSettings.theme = event.target.value;
+      this.uiSettingsStore.save(this.uiSettings);
+      this.applyUiSettings();
+    });
+
     this.elements.modeSelect.addEventListener("change", (event) => {
       this.uiSettings.selectedMode = event.target.value;
       this.uiSettingsStore.save(this.uiSettings);
@@ -157,7 +163,12 @@ export class StudyApp {
     this.elements.modeSelect.value = this.uiSettings.selectedMode;
     this.elements.showToolsToggle.checked = this.uiSettings.showDeckTools;
     this.elements.disableFlipAnimationToggle.checked = this.uiSettings.disableFlipAnimation;
+    this.elements.themeSelect.value = this.uiSettings.theme;
     this.elements.workspace.classList.toggle("focus-mode", !this.uiSettings.showDeckTools);
+    document.body.classList.remove("theme-white", "theme-navy", "theme-dark-modern");
+    document.body.classList.add(`theme-${this.uiSettings.theme}`);
+    document.documentElement.style.colorScheme =
+      this.uiSettings.theme === "white" ? "light" : "dark";
     document.body.classList.toggle("no-flip-animation", this.uiSettings.disableFlipAnimation);
     document.body.classList.toggle("quiz-mode", this.uiSettings.selectedMode === "quizzes");
     this.elements.flashcardPanel.hidden = this.uiSettings.selectedMode === "quizzes";

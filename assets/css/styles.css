@@ -1,14 +1,38 @@
 :root {
-  --bg: #f4f0e8;
-  --ink: #172433;
-  --muted: #5c6773;
-  --panel: rgba(255, 255, 255, 0.72);
-  --panel-strong: #ffffff;
-  --accent: #05668d;
-  --accent-2: #ef476f;
-  --accent-3: #ffd166;
+  --bg: #eef3fb;
+  --page-bg:
+    radial-gradient(circle at 10% 16%, rgba(14, 75, 116, 0.35), transparent 28%),
+    radial-gradient(circle at 88% 14%, rgba(5, 102, 141, 0.22), transparent 24%),
+    linear-gradient(160deg, #dfe9f8 0%, #eef3fb 52%, #d4e1f4 100%);
+  --ink: #16263a;
+  --muted: #546575;
+  --panel: rgba(245, 249, 255, 0.74);
+  --panel-strong: #f8fbff;
+  --surface: #f8fbff;
+  --surface-soft: #edf4ff;
+  --surface-accent-1: #ffffff;
+  --surface-accent-2: #edf4ff;
+  --surface-accent-3: #f7fbff;
+  --surface-accent-4: #e8f1fc;
+  --accent: #13608e;
+  --accent-2: #1f7bb5;
+  --accent-3: #74b4df;
   --danger: #b42318;
-  --shadow: 0 16px 40px rgba(23, 36, 51, 0.14);
+  --border: rgba(22, 38, 58, 0.12);
+  --border-strong: rgba(22, 38, 58, 0.2);
+  --shadow: 0 16px 40px rgba(22, 38, 58, 0.14);
+  --button-shadow: 0 8px 16px rgba(22, 38, 58, 0.12);
+  --selected-bg: rgba(19, 96, 142, 0.12);
+  --selected-shadow: inset 0 0 0 1px rgba(19, 96, 142, 0.24);
+  --correct-bg: rgba(12, 131, 81, 0.12);
+  --wrong-bg: rgba(180, 35, 24, 0.11);
+  --danger-surface: rgba(180, 35, 24, 0.1);
+  --flashcard-front-bg: linear-gradient(165deg, var(--surface-accent-1), var(--surface-accent-2));
+  --flashcard-back-bg: linear-gradient(165deg, var(--surface-accent-3), var(--surface-accent-4));
+  --primary-button-bg: linear-gradient(120deg, #0f4b71, var(--accent));
+  --settings-bg: rgba(248, 251, 255, 0.72);
+  --shape-a-bg: conic-gradient(from 90deg, rgba(19, 96, 142, 0.85), #2b8fc8, rgba(19, 96, 142, 0.85));
+  --shape-b-bg: conic-gradient(from 180deg, rgba(239, 71, 111, 0.82), rgba(255, 209, 102, 0.92), rgba(239, 71, 111, 0.82));
 }
 
 * {
@@ -24,11 +48,117 @@ body {
 body {
   font-family: "Segoe UI", sans-serif;
   color: var(--ink);
-  background:
+  background: var(--page-bg);
+  overflow-x: hidden;
+}
+
+body.theme-white {
+  --bg: #f4f0e8;
+  --page-bg:
     radial-gradient(circle at 8% 15%, rgba(5, 102, 141, 0.24), transparent 35%),
     radial-gradient(circle at 88% 12%, rgba(239, 71, 111, 0.2), transparent 34%),
     linear-gradient(160deg, #fbfaf6, var(--bg));
-  overflow-x: hidden;
+  --ink: #172433;
+  --muted: #5c6773;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-strong: #ffffff;
+  --surface: #fffeff;
+  --surface-soft: #ffffff;
+  --surface-accent-1: #ffffff;
+  --surface-accent-2: #f2f8ff;
+  --surface-accent-3: #fffaf2;
+  --surface-accent-4: #fff3df;
+  --accent: #05668d;
+  --accent-2: #ef476f;
+  --accent-3: #ffd166;
+  --border: rgba(23, 36, 51, 0.12);
+  --border-strong: rgba(23, 36, 51, 0.2);
+  --shadow: 0 16px 40px rgba(23, 36, 51, 0.14);
+  --button-shadow: 0 8px 16px rgba(23, 36, 51, 0.12);
+  --selected-bg: #eaf7fb;
+  --selected-shadow: inset 0 0 0 1px rgba(5, 102, 141, 0.26);
+  --correct-bg: #e8f7ef;
+  --wrong-bg: #fff0ef;
+  --danger-surface: #fff0ef;
+  --flashcard-front-bg: linear-gradient(165deg, var(--surface-accent-1), var(--surface-accent-2));
+  --flashcard-back-bg: linear-gradient(165deg, var(--surface-accent-3), var(--surface-accent-4));
+  --primary-button-bg: linear-gradient(120deg, #044b68, var(--accent));
+  --settings-bg: rgba(255, 255, 255, 0.65);
+  --shape-a-bg: conic-gradient(from 90deg, var(--accent), #00a896, var(--accent));
+  --shape-b-bg: conic-gradient(from 180deg, var(--accent-2), var(--accent-3), var(--accent-2));
+}
+
+body.theme-navy {
+  --bg: #0f1724;
+  --page-bg:
+    radial-gradient(circle at 14% 14%, rgba(51, 122, 173, 0.28), transparent 26%),
+    radial-gradient(circle at 82% 22%, rgba(107, 166, 212, 0.16), transparent 22%),
+    linear-gradient(160deg, #122238 0%, #0e1726 48%, #09101b 100%);
+  --ink: #e8eef7;
+  --muted: #9eb0c3;
+  --panel: rgba(15, 24, 38, 0.74);
+  --panel-strong: #132033;
+  --surface: #101a2a;
+  --surface-soft: #132033;
+  --surface-accent-1: #152338;
+  --surface-accent-2: #101a2a;
+  --surface-accent-3: #182536;
+  --surface-accent-4: #101521;
+  --accent: #5bb4df;
+  --accent-2: #7dc5ea;
+  --accent-3: #254b74;
+  --border: rgba(209, 223, 241, 0.14);
+  --border-strong: rgba(209, 223, 241, 0.24);
+  --shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+  --button-shadow: 0 10px 20px rgba(0, 0, 0, 0.26);
+  --selected-bg: rgba(91, 180, 223, 0.18);
+  --selected-shadow: inset 0 0 0 1px rgba(123, 204, 241, 0.26);
+  --correct-bg: rgba(13, 149, 92, 0.2);
+  --wrong-bg: rgba(180, 35, 24, 0.2);
+  --danger-surface: rgba(180, 35, 24, 0.18);
+  --flashcard-front-bg: linear-gradient(165deg, #182638, #101a2a);
+  --flashcard-back-bg: linear-gradient(165deg, #102030, #0d1724);
+  --primary-button-bg: linear-gradient(120deg, #1b547d, #2f7eaa);
+  --settings-bg: rgba(16, 25, 39, 0.8);
+  --shape-a-bg: radial-gradient(circle, rgba(91, 180, 223, 0.8), rgba(91, 180, 223, 0.18) 55%, transparent 72%);
+  --shape-b-bg: radial-gradient(circle, rgba(125, 197, 234, 0.58), rgba(125, 197, 234, 0.12) 60%, transparent 75%);
+}
+
+body.theme-dark-modern {
+  --bg: #0a0f19;
+  --page-bg:
+    radial-gradient(circle at 14% 18%, rgba(64, 116, 255, 0.24), transparent 22%),
+    radial-gradient(circle at 80% 12%, rgba(0, 209, 178, 0.12), transparent 18%),
+    radial-gradient(circle at 50% 100%, rgba(101, 68, 255, 0.15), transparent 24%),
+    linear-gradient(160deg, #111827 0%, #090d16 50%, #04070c 100%);
+  --ink: #edf2f8;
+  --muted: #a4afbd;
+  --panel: rgba(14, 18, 30, 0.78);
+  --panel-strong: #111827;
+  --surface: #0f1624;
+  --surface-soft: #121a2a;
+  --surface-accent-1: #151c2c;
+  --surface-accent-2: #0f1624;
+  --surface-accent-3: #17131d;
+  --surface-accent-4: #0f121b;
+  --accent: #59c3c3;
+  --accent-2: #8b7cf6;
+  --accent-3: #39d0aa;
+  --border: rgba(223, 230, 241, 0.12);
+  --border-strong: rgba(223, 230, 241, 0.22);
+  --shadow: 0 24px 58px rgba(0, 0, 0, 0.42);
+  --button-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+  --selected-bg: rgba(89, 195, 195, 0.16);
+  --selected-shadow: inset 0 0 0 1px rgba(89, 195, 195, 0.28);
+  --correct-bg: rgba(57, 208, 170, 0.16);
+  --wrong-bg: rgba(239, 68, 68, 0.16);
+  --danger-surface: rgba(239, 68, 68, 0.14);
+  --flashcard-front-bg: linear-gradient(165deg, #151c2b, #0f1624);
+  --flashcard-back-bg: linear-gradient(165deg, #19131d, #10131b);
+  --primary-button-bg: linear-gradient(120deg, #0c7c86, #4c6fff);
+  --settings-bg: rgba(15, 20, 31, 0.82);
+  --shape-a-bg: radial-gradient(circle, rgba(89, 195, 195, 0.9), rgba(89, 195, 195, 0.12) 55%, transparent 74%);
+  --shape-b-bg: radial-gradient(circle, rgba(139, 124, 246, 0.74), rgba(139, 124, 246, 0.12) 58%, transparent 76%);
 }
 
 .background-shape {
@@ -44,7 +174,7 @@ body {
   height: 320px;
   left: -130px;
   top: 48%;
-  background: conic-gradient(from 90deg, var(--accent), #00a896, var(--accent));
+  background: var(--shape-a-bg);
 }
 
 .shape-b {
@@ -52,7 +182,7 @@ body {
   height: 240px;
   right: -90px;
   top: 20%;
-  background: conic-gradient(from 180deg, var(--accent-2), var(--accent-3), var(--accent-2));
+  background: var(--shape-b-bg);
 }
 
 .app-shell {
@@ -75,10 +205,10 @@ body {
 .settings-panel {
   min-width: 210px;
   margin-top: 0.2rem;
-  border: 1px solid rgba(23, 36, 51, 0.12);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.45rem 0.6rem;
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--settings-bg);
 }
 
 .settings-panel summary {
@@ -105,8 +235,8 @@ body {
   width: 100%;
   padding: 0.45rem 0.55rem;
   border-radius: 10px;
-  border: 1px solid rgba(23, 36, 51, 0.2);
-  background: #fffeff;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -154,7 +284,7 @@ h2 {
 .card-panel,
 .tool-panel {
   background: var(--panel);
-  border: 1px solid rgba(23, 36, 51, 0.08);
+  border: 1px solid var(--border);
   border-radius: 22px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(8px);
@@ -200,11 +330,11 @@ body.no-flip-animation .flashcard {
 }
 
 .flashcard-front {
-  background: linear-gradient(165deg, #ffffff, #f2f8ff);
+  background: var(--flashcard-front-bg);
 }
 
 .flashcard-back {
-  background: linear-gradient(165deg, #fffaf2, #fff3df);
+  background: var(--flashcard-back-bg);
   transform: rotateY(180deg);
 }
 
@@ -236,19 +366,19 @@ body.no-flip-animation .flashcard {
 
 .quiz-answer.is-selected {
   border-color: var(--accent);
-  background: #eaf7fb;
-  box-shadow: inset 0 0 0 1px rgba(5, 102, 141, 0.26);
+  background: var(--selected-bg);
+  box-shadow: var(--selected-shadow);
 }
 
 .quiz-answer.is-correct {
   border-color: rgba(0, 126, 89, 0.45);
-  background: #e8f7ef;
-  color: #075b3f;
+  background: var(--correct-bg);
+  color: var(--ink);
 }
 
 .quiz-answer.is-wrong {
   border-color: rgba(180, 35, 24, 0.45);
-  background: #fff0ef;
+  background: var(--wrong-bg);
   color: var(--danger);
 }
 
@@ -270,7 +400,7 @@ textarea {
 }
 
 button {
-  border: 1px solid rgba(23, 36, 51, 0.2);
+  border: 1px solid var(--border-strong);
   background: var(--panel-strong);
   color: var(--ink);
   padding: 0.64rem 0.75rem;
@@ -281,17 +411,17 @@ button {
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(23, 36, 51, 0.12);
+  box-shadow: var(--button-shadow);
 }
 
 button.primary {
-  background: linear-gradient(120deg, #044b68, var(--accent));
+  background: var(--primary-button-bg);
   color: #fff;
   border-color: transparent;
 }
 
 button.danger {
-  background: #fff0ef;
+  background: var(--danger-surface);
   border-color: rgba(180, 35, 24, 0.35);
   color: var(--danger);
 }
@@ -312,9 +442,25 @@ textarea {
   min-height: 98px;
   padding: 0.7rem;
   border-radius: 10px;
-  border: 1px solid rgba(23, 36, 51, 0.2);
+  border: 1px solid var(--border-strong);
   resize: vertical;
-  background: #fffeff;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+body.theme-navy .background-shape,
+body.theme-dark-modern .background-shape {
+  opacity: 0.24;
+}
+
+body.theme-navy .flashcard-face,
+body.theme-dark-modern .flashcard-face {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+body.theme-navy button:hover,
+body.theme-dark-modern button:hover {
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.3);
 }
 
 .stacked-actions {
