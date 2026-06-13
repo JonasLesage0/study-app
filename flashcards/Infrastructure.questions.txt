@@ -1,0 +1,94 @@
+Infrastructure Layer: Questions
+
+Below are questions designed to help you understand the Infrastructure layer in the context of Domain-Driven Design (DDD) and hexagonal architecture.
+🧭 Hexagonal Boundaries
+1. Configurator Role
+
+In hexagonal terms, the configurator is outside the pattern but still essential. Which files/folders play that role in these services, and why?
+2. Inside vs Outside
+
+Use concrete examples from Taskly, Accounts or Payments to separate “inside the app” from “outside the app” in this codebase. Which Infrastructure classes are clearly outside the app boundary?
+
+3. Driving vs Driven Adapters
+
+Classify each of the following as driving or driven adapters: Web API controllers, Messaging Controller, Messaging Domain Publisher, Repositories.
+4. Composition Root Coupling
+
+AddModules() imports many modules and technologies. Why is this high coupling acceptable there but not in Application/Domain?
+5. Port Ownership Check
+
+Pick two Infrastructure classes and identify the port interface they implement/use. Where are those ports defined? And mark those ports as Driven or Driving.
+6. Repositories and Aggregate Roots
+
+Why do we define repositories only for Aggregate Roots (for example ITodoListRepository, IUserRepository) and not for internal entities/value objects? Which DDD consistency rule does this protect?
+🗄️ Persistence Adapters, Read/Write UoW
+7. DomainDbContext vs QueryDbContext
+
+Why are write and read split in different contexts (DomainDbContext and QueryDbContext)? What architectural benefit does this provide?
+8. Query Tracking Strategy
+
+QueryDbContext sets NoTracking. Why is this a sensible default for query-side adapters?
+9. Unit of Work Responsibilities
+
+In EntityFrameworkUoW, what does Do() guarantee, and what does Save<TRepository>() actually do before Do() is called?
+10. Repository Pattern vs Direct DbContext
+
+What are the benefits of using repository ports in the Application layer instead of using DbContext directly in use cases? Consider dependency direction, testability, and persistence swapping.
+11. Generic Repository Save Behavior
+
+EfCoreGenericRepository.Save() only adds when entity state is detached. How are updates persisted if no explicit Update() is called?
+12. Strongly Typed IDs in EF
+
+How do EntityIdConverter<TId> and explicit .HasConversion(...) mappings protect the model from primitive obsession at the Infrastructure boundary?
+13. Owned Value Objects
+
+In PaymentConfiguration, PaymentPlan is mapped with OwnsOne. Why is this mapping aligned with Value Object semantics?
+14. EF UoW
+
+EntityFrameworkUoW: where are domain events dispatched, and why?
+15. Startup Migrations and Seeding
+
+UseEFCoreModule() applies migrations and seeds only when not production. What risks does this avoid, and what risks still remain?
+16. Configuration Boundary
+
+Why should an Application use case not depend directly on IConfiguration? Where should configuration values be translated into application-friendly options/ports instead?
+📡 Messaging Infrastructure and AsyncAPI
+17. Bounded Context Queue Prefix
+
+Why does the parser use info.x-metadata.BoundedContext as QueuePrefix for consumers?
+18. OperationId Contract
+
+Trace how an AsyncAPI operation ID becomes a keyed DI controller resolution in runtime message handling.
+19. Controller Dispatch with DI Scope
+
+Why does MessageProcessorWithDI create a scope per message before resolving controllers? Trace this in the codebase.
+20. Publisher as Domain Event Listener
+
+AmqpTopicPublisher implements IDomainEventListener. Why is this an interesting hexagonal choice for bridging domain events to integration events?
+21. Reflection-based Policy Discovery
+
+PolicyDomainEventListenerWithDI discovers IPolicy<> via reflection. What are the benefits and operational risks of this strategy?
+🔁 Cross-Context Integration and ACL
+22. Payments ACL Decision (Simplifyme.Payments)
+
+In WhenUserSubscribedCreatePayment, why is translating Accounts subscription plans to Payments plans explicitly an ACL concern?
+23. Taskly ACL Decision
+
+How does SubscriptionPlanAcl.ToAccessLevel() protect Taskly from upstream vocabulary changes in Accounts?
+24. Event Contract Placement
+
+Where should integration event message DTOs live, and why should domain entities never be serialized directly as cross-service contracts?
+25. One Exchange, Many Contexts
+
+All services publish/consume via exchange simplifyme with topic routing keys. Explain the coupling this reduces and the coupling it still leaves.
+🧩 Persistence Modeling Deep Dive
+26. OwnsMany in EF Core
+
+How does OwnsMany help model child objects that belong to an aggregate (for example, items inside a TodoList), and why is this often a better fit than giving every child object its own repository?
+27. TodoList Configuration vs TodoItems Configuration
+
+In Taskly, why can it be valid to have a dedicated EF configuration for TodoList while mapping TodoItems through aggregate ownership (OwnsMany) instead of configuring/persisting them as separate aggregate roots?
+⚙️ Environment Setup
+28. Environment Isolation
+
+Compare the docker-compose files for taskly, accounts, and payments. What pattern is used to avoid local port collisions?

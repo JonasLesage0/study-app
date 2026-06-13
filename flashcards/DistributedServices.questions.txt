@@ -1,0 +1,39 @@
+Distributed Services: Questions
+
+Focus on architecture trade-offs, service boundaries, data ownership, workflow reliability, and operations in the Simplifyme context.
+🌍 From Monolith to Distributed Services
+1. Why Distribute?
+
+Which concrete signals indicate that a modular monolith should be split into distributed services, and which problems are usually not solved by splitting?
+2. Spectrum Trade-offs
+
+Compare Monolith, Modular Monolith, SOA, and Microservices. Where does operational complexity rise the fastest, and why?
+3. Distributed Fallacies in Practice
+
+Pick three fallacies of distributed computing and explain how each one can break a real workflow (for example subscription or payment expiration).
+4. Bounded Context + Runtime
+
+The lecture defines microservices as “Bounded Context + Distributed Runtime.” Why is this more precise than saying “small services”?
+🧱 Boundaries, Granularity, and Data
+5. Goldilocks Granularity
+
+What are the symptoms of services that are too small vs too large, and how does workflow alignment help find the “just right” service boundary?
+6. Distributed Monolith Smells
+
+What evidence would show that a system is a distributed monolith rather than autonomous microservices?
+7. Database-per-Service Rule
+
+Why is a shared integration database considered a trap in microservices, and what specific coupling does it introduce between teams?
+🔄 Workflows, Contracts, and Reliability
+8. Sagas and Transaction Boundaries
+
+Why do cross-service workflows use sagas instead of ACID transactions, and what is the role of compensating actions?
+9. Contract Taxonomy
+
+Explain the difference between domain events and integration events. Why should only integration events cross service boundaries?
+10. Contract Evolution
+
+Why are contracts “build inputs, not documentation”? Explain how expand-and-contract versioning reduces breaking changes.
+11. Async Reliability Chain
+
+How do Outbox, relay worker, Inbox deduplication, and DLQ fit together to improve reliability in at-least-once messaging?

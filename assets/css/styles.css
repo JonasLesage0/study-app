@@ -1,0 +1,369 @@
+:root {
+  --bg: #f4f0e8;
+  --ink: #172433;
+  --muted: #5c6773;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-strong: #ffffff;
+  --accent: #05668d;
+  --accent-2: #ef476f;
+  --accent-3: #ffd166;
+  --danger: #b42318;
+  --shadow: 0 16px 40px rgba(23, 36, 51, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 8% 15%, rgba(5, 102, 141, 0.24), transparent 35%),
+    radial-gradient(circle at 88% 12%, rgba(239, 71, 111, 0.2), transparent 34%),
+    linear-gradient(160deg, #fbfaf6, var(--bg));
+  overflow-x: hidden;
+}
+
+.background-shape {
+  position: fixed;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(2px);
+  opacity: 0.35;
+}
+
+.shape-a {
+  width: 320px;
+  height: 320px;
+  left: -130px;
+  top: 48%;
+  background: conic-gradient(from 90deg, var(--accent), #00a896, var(--accent));
+}
+
+.shape-b {
+  width: 240px;
+  height: 240px;
+  right: -90px;
+  top: 20%;
+  background: conic-gradient(from 180deg, var(--accent-2), var(--accent-3), var(--accent-2));
+}
+
+.app-shell {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 1rem auto 2rem;
+  animation: fade-in 0.6s ease-out;
+}
+
+.app-header {
+  margin-bottom: 1.2rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings-panel {
+  min-width: 210px;
+  margin-top: 0.2rem;
+  border: 1px solid rgba(23, 36, 51, 0.12);
+  border-radius: 12px;
+  padding: 0.45rem 0.6rem;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.settings-panel summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.settings-toggle-label {
+  margin-top: 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.settings-field {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.settings-field select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(23, 36, 51, 0.2);
+  background: #fffeff;
+  color: var(--ink);
+}
+
+.settings-toggle-label input {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-weight: 400;
+  margin: 0.3rem 0;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 4vw, 3rem);
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+.workspace {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.workspace.focus-mode {
+  grid-template-columns: 1fr;
+}
+
+.workspace.focus-mode .tool-panel {
+  display: none;
+}
+
+.card-panel,
+.tool-panel {
+  background: var(--panel);
+  border: 1px solid rgba(23, 36, 51, 0.08);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+}
+
+.progress,
+.muted {
+  margin: 0;
+  color: var(--muted);
+}
+
+.flashcard {
+  margin-top: 0.7rem;
+  width: 100%;
+  min-height: 330px;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  cursor: pointer;
+  perspective: 1100px;
+  padding: 0;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+
+body.no-flip-animation .flashcard {
+  transition: none;
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 1.1rem;
+  backface-visibility: hidden;
+  box-shadow: 0 6px 20px rgba(23, 36, 51, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+}
+
+.flashcard-front {
+  background: linear-gradient(165deg, #ffffff, #f2f8ff);
+}
+
+.flashcard-back {
+  background: linear-gradient(165deg, #fffaf2, #fff3df);
+  transform: rotateY(180deg);
+}
+
+.flashcard.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-text {
+  white-space: pre-line;
+  margin-top: 0.7rem;
+  line-height: 1.5;
+}
+
+.quiz-panel {
+  margin-top: 0.7rem;
+}
+
+.quiz-answers {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.quiz-answer {
+  width: 100%;
+  text-align: left;
+  line-height: 1.35;
+}
+
+.quiz-answer.is-selected {
+  border-color: var(--accent);
+  background: #eaf7fb;
+  box-shadow: inset 0 0 0 1px rgba(5, 102, 141, 0.26);
+}
+
+.quiz-answer.is-correct {
+  border-color: rgba(0, 126, 89, 0.45);
+  background: #e8f7ef;
+  color: #075b3f;
+}
+
+.quiz-answer.is-wrong {
+  border-color: rgba(180, 35, 24, 0.45);
+  background: #fff0ef;
+  color: var(--danger);
+}
+
+.quiz-feedback {
+  min-height: 1.5rem;
+  margin-top: 0.8rem;
+}
+
+.controls {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(23, 36, 51, 0.2);
+  background: var(--panel-strong);
+  color: var(--ink);
+  padding: 0.64rem 0.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(23, 36, 51, 0.12);
+}
+
+button.primary {
+  background: linear-gradient(120deg, #044b68, var(--accent));
+  color: #fff;
+  border-color: transparent;
+}
+
+button.danger {
+  background: #fff0ef;
+  border-color: rgba(180, 35, 24, 0.35);
+  color: var(--danger);
+}
+
+.add-card-form {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+label {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+textarea {
+  width: 100%;
+  min-height: 98px;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(23, 36, 51, 0.2);
+  resize: vertical;
+  background: #fffeff;
+}
+
+.stacked-actions {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+@media (max-width: 920px) {
+  .header-row {
+    flex-direction: column;
+  }
+
+  .settings-panel {
+    width: 100%;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .flashcard {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    width: min(100%, calc(100% - 1rem));
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .card-panel,
+  .tool-panel {
+    border-radius: 16px;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

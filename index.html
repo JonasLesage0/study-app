@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study app</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="background-shape shape-a" aria-hidden="true"></div>
+    <div class="background-shape shape-b" aria-hidden="true"></div>
+
+    <main class="app-shell">
+      <header class="app-header">
+        <div class="header-row">
+          <div>
+            <p class="eyebrow">Study tool</p>
+            <h1>Study app</h1>
+            <p id="source-status" class="muted">Loading cards...</p>
+          </div>
+
+          <details class="settings-panel">
+            <summary>Settings</summary>
+
+            <label for="mode-select" class="settings-field">
+              Study type
+              <select id="mode-select">
+                <option value="flashcards">Flashcards</option>
+                <option value="quizzes">Quizzes</option>
+              </select>
+            </label>
+
+            <label id="deck-field" for="deck-select" class="settings-field">
+              Deck
+              <select id="deck-select">
+                <option value="__all__">All decks</option>
+              </select>
+            </label>
+
+            <label id="part-field" for="part-select" class="settings-field" hidden>
+              Part
+              <select id="part-select">
+                <option value="__all__">All parts</option>
+              </select>
+            </label>
+
+            <label for="show-tools-toggle" class="settings-toggle-label">
+              <input id="show-tools-toggle" type="checkbox" checked />
+              Show Extend your deck panel
+            </label>
+
+            <label for="disable-flip-animation-toggle" class="settings-toggle-label">
+              <input id="disable-flip-animation-toggle" type="checkbox" checked />
+              Disable flip animation
+            </label>
+          </details>
+        </div>
+      </header>
+
+      <section id="workspace" class="workspace">
+        <div class="card-panel">
+          <p id="progress" class="progress">0 / 0</p>
+
+          <div id="flashcard-panel">
+            <button id="card" class="flashcard" type="button" aria-label="Flip card">
+              <div class="flashcard-face flashcard-front">
+                <h2>Question</h2>
+                <p id="question-text" class="card-text">No card loaded yet.</p>
+              </div>
+              <div class="flashcard-face flashcard-back">
+                <h2>Answer</h2>
+                <p id="answer-text" class="card-text">Flip the card to reveal the answer.</p>
+              </div>
+            </button>
+
+            <div class="controls">
+              <button id="prev-btn" type="button">Previous</button>
+              <button id="flip-btn" type="button" class="primary">Flip</button>
+              <button id="next-btn" type="button">Next</button>
+            </div>
+          </div>
+
+          <div id="quiz-panel" class="quiz-panel" hidden>
+            <h2>Question</h2>
+            <p id="quiz-question-text" class="card-text">No quiz loaded yet.</p>
+            <div id="quiz-answers" class="quiz-answers"></div>
+            <p id="quiz-feedback" class="quiz-feedback muted">Select an answer.</p>
+
+            <div class="controls">
+              <button id="quiz-prev-btn" type="button">Previous</button>
+              <button id="quiz-check-btn" type="button" class="primary">Check</button>
+              <button id="quiz-next-btn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="tool-panel">
+          <h2>Extend your deck</h2>
+          <p class="muted">
+            Add your own card below. It is saved in your browser and merged with the cards from
+            the source files.
+          </p>
+
+          <form id="add-card-form" class="add-card-form">
+            <label for="question-input">Question</label>
+            <textarea
+              id="question-input"
+              name="question"
+              placeholder="Vraag: What is hexagonal architecture?"
+              required
+            ></textarea>
+
+            <label for="answer-input">Answer</label>
+            <textarea
+              id="answer-input"
+              name="answer"
+              placeholder="A clean architecture style with ports and adapters."
+              required
+            ></textarea>
+
+            <button type="submit" class="primary">Add card</button>
+          </form>
+
+          <div class="stacked-actions">
+            <button id="shuffle-btn" type="button">Shuffle deck</button>
+            <button id="reload-btn" type="button">Reload source files</button>
+            <button id="clear-custom-btn" type="button" class="danger">
+              Remove all custom cards
+            </button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
+</html>

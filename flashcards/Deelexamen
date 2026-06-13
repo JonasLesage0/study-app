@@ -1,0 +1,486 @@
+Deelexamen
+
+- Infrastructuur
+Vraag 1: Ports & Adapters
+Vraag: Binnen Hexagonal Architecture spreken we over "Driving (Primary) Adapters" en "Driven (Secondary) Adapters". Wat is het verschil tussen deze twee?
+Een Driving Adapter zit aan de voorkant en triggert het systeem (roept de core aan). Een Driven Adapter zit aan de achterkant en wordt aangeroepen dóór het systeem (implementeert een poort).
+Voorbeeld: Een Web API (REST Controller) is een Driving adapter. Een Entity Framework Database Repository is een Driven adapter.
+
+Vraag 2: DTO's en Mapping
+Vraag: Waarom mogen DTO's van een inkomend HTTP-request niet direct doorgegeven worden aan de Use Cases in de applicatie core?
+De Kern: Adapters moeten DTO's áltijd vertalen naar interne 'pure' modellen (Application inputs).
+Het Waarom: DTO's bevatten vaak framework-specifieke validatie (zoals [Required] attributen voor ASP.NET). Als je deze in het domein toelaat, raakt je pure core gekoppeld aan je web-framework.
+De Oplossing: De Web API Controller ontvangt de DTO, vertaalt de data naar een simpel Use Case-object, en roept dan pas de Use Case aan.
+
+Vraag 3: Business Rules in Controllers (Anti-patroon)
+Vraag: Waarom is het een fout ("anti-patroon") als een Web API Controller zelf controleert of een gebruiker oud genoeg is, of checkt of een e-mailadres al bestaat?
+De Kern: Adapters (zoals controllers) moeten "thin & stupid" zijn. Ze mogen géén business beslissingen of logica bevatten.
+Het Waarom: Als business logica in de controller zit, kun je die logica niet hergebruiken (bijv. als er later een bericht via RabbitMQ binnenkomt dat óók een user aanmaakt). Bovendien is logica in een controller lastig te testen.
+De Oplossing: De controller mag alleen vertalen en de taak direct blind doorgeven aan een Use Case in de Application laag.
+
+Vraag 4: Cross-cutting concerns
+Vraag: Waar in een Hexagonale Architectuur plaats je "Cross-cutting concerns" zoals het loggen van HTTP requests, retries (opnieuw proberen bij falen), en circuit breakers?
+De Kern: Deze horen aan de randen (boundaries) van het systeem, in de Adapters of in de middleware van de Infrastructuur laag.
+Het Waarom: Dit zijn "technologie-bewuste" acties. Het oplossen van een falende netwerkverbinding is een infrastructuur-probleem. De applicatie core is blind voor netwerken en hoeft niet te weten wat een time-out is.
+Voorbeeld: Een retry-policy voeg je toe aan je externe API-client (Adapter), niet aan je interne Use Case.
+
+Vraag 5: Locatie van Ports vs Adapters (Dependency Inversion)
+Vraag: In welke laag definieer je de "Port" (interface) en in welke laag schrijf je de "Adapter" (implementatie)? Leg uit waarom.
+De Kern: De Port (bijv. IUserRepository) schrijf je in de Core (Domain laag). De Adapter (bijv. SqlUserRepository) schrijf je in de Infrastructure laag.
+Het Waarom: De Core is de baas. De core dicteert wát hij nodig heeft via de interface. De buitenwereld (infrastructuur) moet zich aanpassen aan de eisen van de core, niet andersom. Dit beschermt de core tegen veranderingen in de buitenwereld.
+
+Vraag 6: De Main Module / Composition Root
+Vraag: Wat is de rol van de Main Module (Composition Root) en waarom mag de Application Core hier niets van weten?
+De Kern: Main is de enige plek die letterlijk álles mag weten. Het configureert het systeem en koppelt de adapters aan de poorten (Dependency Injection).
+Het Waarom: Als de Main module alle vuile "lijm-code" op zich neemt, kan de Core onafhankelijk, "zuiver" en technologie-agnostisch blijven.
+Analogie: Main is de autofabriek. Het bouwt de auto en verbindt alle onderdelen, maar is zelf géén onderdeel van de auto.
+
+Vraag 7: Foutafhandeling & Exceptions
+Vraag: Waarom is het een anti-patroon om HTTP-specifieke types (zoals IActionResult) of HTTP status codes (zoals 404) direct vanuit je Use Case te returnen?
+De Kern: Foutafhandeling moet vertaald worden aan de grens (boundary) van je systeem (in de infrastructuur), niet binnenin de core.
+Het Waarom: De Core mag niet weten dat HTTP bestaat. Als je Use Case een 404 teruggeeft, zit je core plotseling vast aan web-technologie.
+De Oplossing: De Use Case gooit een simpele (domein) exceptie (bijv. NotFoundException), en een adapter (of GlobalExceptionHandler) vertaalt dit buiten de core naar een 404 HTTP status.
+
+Vraag 8: ORM Leakage (Anti-patroon)
+Vraag: Waarom is het een fout om Entity Framework attributen (zoals [Table("Users")]) in je Domain Modellen te plaatsen?
+De Kern: Dit heet "Leaking ORM entities into the domain". Het domein moet onwetend zijn van de database ("persistence ignorance").
+Het Waarom: Zodra je database-code in je domein plakt, is je core niet meer technologie-agnostisch. Je domein wordt afhankelijk van Entity Framework.
+De Oplossing: Hou het domein schoon en schrijf de database configuratie/mapping volledig in de Infrastructuur laag.
+
+Vraag 9: Het "new" keyword (Hardcoding vs Dependency Injection)
+Vraag: Waarom mag je in een Use Case (applicatie core) nooit een infrastructuur-service aanmaken met het new keyword (bijv. var repo = new SqlUserRepository();)?
+De Kern: Omdat je daarmee de Use Case direct, hardcoded koppelt aan een specifieke technologie. Je omzeilt de "Port" (interface).
+Het Waarom: Als je new gebruikt, kun je de database niet meer makkelijk vervangen door een andere, en kun je de Use Case niet meer testen met een "nep" database (mock).
+De Oplossing: De Use Case vraagt in zijn constructor om de Interface (Port). De Main module regelt later welke echte class daar aan gekoppeld wordt.
+
+Vraag 10: Waarom de Main module opsplitsen in Modules?
+Vraag: In plaats van één gigantische Program.cs file vol met configuratie, splitsen we de Main module vaak op in losse "Modules" (zoals AddPersistenceModule, AddWebApiModule). Wat zijn hiervan de voordelen?
+De Kern: Het voorkomt een onleesbare, chaotische brij aan code (een "wall of registrations") in je opstart-bestand.
+Het Waarom (3 redenen):
+Leesbaarheid: Je ziet direct welke "capabilities" (mogelijkheden) je app heeft.
+Vervangbaarheid: Je kunt makkelijk de hele database-module omwisselen zonder de rest te breken.
+Testbaarheid: Bij integratietesten kun je heel simpel één module uitschakelen of vervangen.
+
+Vraag 11: AddModules vs UseModules
+Vraag: In de Main module (bijv. in Simplifyme) zien we een expliciete scheiding tussen AddModules(...) en UseModules(...). Wat is het verschil tussen deze twee?
+De Kern: AddModules is puur voor registratie (Dependency Injection). UseModules is voor runtime opstart-acties (de pipeline).
+Het Waarom: Je moet éérst alle services in het systeem "bekendmaken" en koppelen, voordat je de applicatie daadwerkelijk kan aanzetten en acties kan laten uitvoeren.
+Voorbeeld: In AddModules vertel je het systeem: "Als iemand om een Database vraagt, geef dan Postgres". In UseModules zeg je: "Voer nu de database-migraties uit en start de HTTP-server".
+
+- Persistence
+Vraag 12: De Database / Persistence
+Vraag: Waarom is het in deze architectuur een "anti-patroon" (fout) om Entity Framework attributen (zoals [Table("Users")] of [Key]) direct in je Domain Modellen te plaatsen?
+De Kern: Het Domein moet de absolute "Single Source of Truth" zijn voor business logica, en moet technologie-agnostisch zijn ("persistence ignorance").
+Het Waarom: Een database is slechts een implementatiedetail. Als je database-code in je domein stopt, raakt je core vervuild. Database-mapping (welke kolom, welke tabel) hoort thuis in de Infrastructuur laag.
+De Oplossing: Hou de entity in het domein 100% 'schoon' en schrijf in de Infrastructuur laag een mapping-configuratie (via fluent API / builders).
+
+Vraag 13: Read vs Write Model (CQRS-lite)
+Vraag: In de infrastructuur zien we vaak twee gescheiden database-contexten, zoals een DomainDbContext (Write) en een QueryDbContext (Read). Waarom splitsen we dit op?
+De Kern: Lezen en schrijven hebben compleet andere technische eisen en doelen.
+Het Waarom: Het Write-model (DomainDbContext) moet héle domein-aggregaten inladen om business-regels te checken en wijzigingen bij te houden (tracking). Dit is zwaar. Het Read-model (QueryDbContext) laadt direct "platte" data (DTO's) in voor het scherm, zónder tracking. Dat is veel sneller en veiliger.
+De Oplossing: Gebruik DomainDbContext in Use Cases die data aanpassen. Gebruik QueryDbContext voor Use Cases (of endpoints) die alleen een lijstje data hoeven te tonen.
+
+Vraag 14: Domain Events & Interceptors
+Vraag: Waarom sturen we Domain Events (zoals "UserCreated") pas naar de message broker via een "Interceptor" (of post-commit hook) in de Infrastructuur, en niet direct vanuit de Use Case?
+De Kern: De regel is: Publish-after-commit. Je mag pas een feit aan de buitenwereld vertellen als de database-transactie 100% succesvol is opgeslagen.
+Het Waarom: Als je het event direct in de Use Case publiceert, en de database crasht één seconde later, dan heb je een event verstuurd over iets dat nooit is opgeslagen. Dat leidt tot corrupte data tussen microservices.
+De Oplossing: De Use Case slaat de events tijdelijk op in het domein-object. Pas nadat Entity Framework (of Mongo) succesvol opslaat, triggert de Interceptor de events richting de message broker.
+
+Vraag 15: Unit of Work & Transacties
+Vraag: Wie is er in deze architectuur verantwoordelijk voor het beheren van de database-transactie (het beginnen en het 'committen' ervan)? De Repository, de Controller, of de Use Case?
+De Kern: De Application Use Case beheert de transactie-grenzen via het IUnitOfWork patroon (een Port).
+Het Waarom: Alleen de Use Case weet exact welke stappen er bij één logische actie horen. Als elke Repository apart zou opslaan ("committen"), en stap 2 mislukt, dan staat stap 1 al per ongeluk in de database.
+Voorbeeld: De Use Case doet zijn werk in het geheugen, en eindigt met _uow.Do() of _uow.Commit(). Alles slaagt, of alles faalt tegelijk.
+
+Vraag 16: Workflow bij een domein-wijziging
+Vraag: Als je een nieuw veld moet toevoegen aan de database, wat is dan de stapsgewijze workflow (volgorde) die je moet volgen in een Hexagonale Architectuur?
+De Kern: Je past áltijd eerst het Domein aan (de bron van waarheid), en laat de infrastructuur daarna pas "inhalen".
+Het Waarom: Als je begint door direct een database-tabel aan te passen, stuur je het design vanuit de techniek in plaats van vanuit de business regels.
+De Oplossing (De Stappen): 1. Pas het Domein model aan -> 2. Pas Use Cases aan (indien nodig) -> 3. Update de EF Core/Mongo Mapping in Infrastructuur -> 4. Genereer de Database Migratie.
+
+Vraag 17: ValueConverters / Mappers
+Vraag: Waarom gebruiken we in de Infrastructuur laag (bij EF Core of MongoDB) speciale "ValueConverters" of "Mappers" voor entiteit ID's (zoals UserId) en Value Objects?
+De Kern: Om rijke, "Strongly Typed" domein-objecten te vertalen naar simpele, primitieve datatypes (zoals een Guid of String) die de database snapt.
+Het Waarom: De database begrijpt geen ingewikkelde C# of TypeScript klassen, hij snapt alleen platte kolommen. Door dit in de infrastructuur te mappen (bijv. de class UserId omzetten naar een Guid kolom), kunnen we ons domein heel leesbaar en "Strongly Typed" houden, terwijl de database simpel blijft.
+
+Vraag 18: Rehydratie (Data inladen zonder side-effects)
+Vraag: Bij het ophalen van data uit de database moeten we de data omzetten naar een Domain Entity ("reconstitute/rehydratie"). Waarom mogen we hiervoor níét de standaard constructor of factory-methode (zoals User.Create()) aanroepen?
+De Kern: Omdat we een bestaande status herstellen, we voeren geen nieuwe business-actie uit.
+Het Waarom: Een factory-methode (zoals .Create()) valideert regels én triggert Domain Events (zoals "UserCreated"). Als je iemand uit de database inlaadt, is die in het verleden al aangemaakt. Je wilt niet dat het systeem wéér denkt dat er een nieuwe user is en nogmaals welkomst-emails gaat versturen (side-effects).
+De Oplossing: De Mapper in de infrastructuurlaag gebruikt speciale technieken (zoals een private constructor of reflection) om de velden stiekem in te vullen zonder de business regels en events te triggeren.
+
+Vraag 19: Database Migraties in Productie
+Vraag: In development runnen we database-migraties vaak automatisch bij het opstarten van de app (app.ApplyMigrations()). Waarom is dit vaak een slecht idee (trade-off) voor een Productie-omgeving?
+De Kern: Startup-migraties zijn handig voor lokaal testen, maar riskant in productie vanwege gelijktijdigheid en controle.
+Het Waarom: In productie start je vaak meerdere instanties van je service tegelijk op (load balancing). Als ze allemaal tegelijk proberen de database-structuur te wijzigen (migreren), kan de database blokkeren of corrupt raken.
+De Oplossing: In productie pas je migraties expliciet en gecontroleerd toe via een CI/CD Deployment Pipeline (bijv. via de dotnet ef database update CLI tool), los van het opstarten van de applicatie.
+
+Vraag 20: Seeding Anti-patroon
+Vraag: Wat wordt er bedoeld met "Seeding confusion" en waarom is het een fout om dataseeders te gebruiken als vervanging voor database-migraties?
+De Kern: Seeders zijn puur om (dummy) data klaar te zetten. Migraties zijn voor het wijzigen van de structuur (schema) van je database.
+Het Waarom: Als je structuurwijzigingen stiekem via seed-scripts doet, gaan je test- en productie-omgevingen uit de pas lopen ("drift"). Migraties zijn bedoeld om een lineaire, onomkeerbare geschiedenis van je database-schema te garanderen.
+De Oplossing: Gebruik migraties altijd voor tabellen/kolommen toevoegen. Gebruik seeders alleen in dev/test omgevingen om snel wat testgebruikers in de app te hebben.
+
+Vraag 21: Directe Projecties in Use Cases (Anti-patroon)
+Vraag: Waarom is het een "smell" (fout) als je in een Application Use Case direct Entity Framework code ziet zoals .Include(x => x.Orders).Select(...)?
+De Kern: Omdat de Use Case hiermee de interne structuur van de database blootlegt en beheert.
+Het Waarom: Een Use Case moet praten in termen van business acties, niet in termen van database-relaties. Als de database-structuur verandert, moet je al je Use Cases aanpassen. Dat breekt de onderhoudbaarheid.
+De Oplossing: De Use Case moet een Query Port aanroepen. De implementatie van die query (de SQL/EF code) zit veilig weggeborgen in de Infrastructuur laag.
+
+Vraag 22: ID Generatie (ValueGeneratedNever)
+Vraag: In de database-mapping zie je vaak de instelling ValueGeneratedNever() voor de Primary Key (ID). Waarom laten we de database het ID niet automatisch aanmaken (zoals een SQL Identity kolom)?
+De Kern: Omdat in deze architectuur de Core (Domein/Applicatie) de baas is over de identiteit van een object, niet de database.
+Het Waarom: Als de database het ID bepaalt, kun je een object pas echt "afmaken" nadat het is opgeslagen. Dit maakt unittesten (zonder DB) heel lastig en zorgt ervoor dat je domein-logica moet wachten op de infrastructuur.
+De Oplossing: We genereren het ID (bijv. een Guid) in de code (Domain Factory) voordat we het object opslaan.
+
+Vraag 23: Tracking: EF Core vs. MongoDB (Deno)
+Vraag: Wat is het grote verschil in "Change Tracking" tussen de .NET implementatie (EF Core) en de Deno implementatie (MongoDB) uit de cursus?
+De Kern: EF Core doet aan automatische tracking; de Deno-versie vereist expliciete tracking.
+Het Waarom: EF Core houdt in het geheugen bij welke objecten je hebt aangepast en slaat dit automatisch op bij SaveChanges. In de MongoDB/Deno-stack moet de developer de entiteit handmatig aan de "tracking list" toevoegen (via _unitOfWork.save(entity)).
+Gevolg: Bij de Deno-stack vergeet je makkelijker iets op te slaan, maar heb je wel meer controle over wat er precies naar de database gaat.
+
+- WebAPI
+Vraag 24: Web API & Foutafhandeling
+Vraag: Waar in de architectuur horen applicatie-excepties (zoals NotFoundException of InvalidOperationException) vertaald te worden naar HTTP Status Codes (zoals 404 Not Found of 400 Bad Request)? Leg uit waarom.
+De Kern: Dit moet buiten de core gebeuren, aan de uiterste grens van je applicatie. In de Web API / Infrastructure laag (vaak via een GlobalExceptionHandler).
+Het Waarom: De Core (Domain en Application Use Cases) mag absoluut niet weten dat HTTP bestaat. HTTP is een protocol, een detail.
+Voorbeeld: Als de Use Case faalt, gooit hij een simpele C# Error. De API-adapter pakt deze error en vertaalt hem netjes naar een '404 HTTP antwoord' voor de browser.
+
+Vraag 25: Response DTO's (Data Privacy)
+Vraag: Waarom maken we voor de Web API aparte "Response DTO's" (bijv. een UserResponse) in plaats van direct onze interne domein-objecten of database-modellen terug te sturen naar de client?
+De Kern: Om een strikte scheiding te houden tussen je interne "keuken" en het menu voor de klant (het API-contract).
+Het Waarom: Je wilt niet dat de buitenwereld interne velden ziet (zoals een wachtwoord-hash of interne database-ID's). Bovendien: als je intern iets verandert in je database, wil je niet dat de app van de klant direct crasht omdat de JSON-output is veranderd.
+De Oplossing: De controller mapt de data van de Use Case naar een specifieke Response DTO die precies bevat wat de client nodig heeft.
+
+Vraag 26: Validatie in de Adapter
+Vraag: Waar in de architectuur hoort "Adapter-level validatie" (zoals checken of een veld is ingevuld of een geldig e-mailformaat heeft) plaats te vinden?
+De Kern: In de Driving Adapter (Web API), direct op de inkomende Request DTO.
+Het Waarom: Je wilt "vuile" data zo snel mogelijk tegenhouden bij de voordeur (Garbage In, Garbage Out voorkomen). De Core moet ervan uit kunnen gaan dat de data die hij ontvangt technisch correct geformatteerd is.
+Let op: Business-validatie (bijv. "mag deze gebruiker dit wel?") hoort nog steeds in de Core.
+
+Vraag 27: De rol van de Web API Adapter (De 5 stappen)
+Vraag: Wat zijn de hoofdtaken van een Web API adapter wanneer er een request binnenkomt?
+De Kern: Het vertalen van het HTTP-protocol naar een Use Case-actie.
+De 5 Stappen (Oplossing):
+De HTTP-body/route inladen in een DTO.
+De DTO valideren (technisch).
+De DTO mappen naar Use Case Input.
+De Use Case aanroepen.
+Het resultaat vertalen naar een HTTP-antwoord (bijv. 201 Created of 200 OK).
+
+Vraag 28: OpenAPI / Swagger als Bron van Waarheid
+Vraag: Waarom is het belangrijk om je API eerst te definiëren in een OpenAPI/Swagger specificatie (YAML/JSON) voordat je de controller bouwt?
+De Kern: De OpenAPI spec is het contract tussen de frontend en de backend.
+Het Waarom: Hierdoor weten beide teams (frontend en backend) precies wat ze van elkaar kunnen verwachten. Het dient als documentatie én als basis voor automatische tests.
+Oplossing: Pas eerst de openapi.yaml aan, en implementeer daarna pas de C# of TypeScript controller.
+
+Vraag 29: De "Don'ts" van de Thin Controller
+Vraag: Wat mag een controller absoluut niet doen om "thin" (dun) te blijven?
+De Kern: Een controller mag nooit direct praten met Repositories en mag geen Business Rules (beslissingen) bevatten.
+Het Waarom: Zodra een controller een repository aanroept, omzeil je de Application Layer (de Use Case). De controller is dan niet meer "dom" maar gaat zelf de regels bepalen.
+De Regel: Een controller mag alleen: Ontvangen -> Valideren -> Mappen -> Use Case aanroepen -> Teruggeven.
+
+Vraag 30: De Rol van de Route Mapper
+Vraag: Waarom gebruiken we een centrale Routes.cs (.NET) of WebApiRoutes.ts (Deno) in plaats van de routes boven elke controller-methode te zetten?
+De Kern: Om één centraal overzicht te hebben van het volledige "API-oppervlak" van de module.
+Het Waarom: Het zorgt voor een duidelijke scheiding tussen de locatie (de URL/het pad) en de actie (de controller). Hierdoor kun je in één oogopslag zien welke endpoints je applicatie aanbiedt zonder 20 bestanden te openen.
+
+Vraag 31: De Workflow: Van Contract naar Implementatie (9 stappen)
+Vraag: Wat is de juiste volgorde (workflow) om een nieuw endpoint toe te voegen?
+De Kern: Je begint altijd aan de buitenkant: Contract -> Implementatie -> Bedrading.
+De Stappen (Samengevat):
+Update OpenAPI spec (contract).
+Zorg dat de Use Case bestaat.
+Bouw de Controller.
+Voeg de route toe aan de Route Mapper.
+Koppel alles in de Factory en de DI-container (Main).
+Test (bijv. via .http bestanden).
+
+Vraag 32: Naam-gebaseerde resolutie (Deno Factory)
+Vraag: In de Deno-omgeving moet de routeName in de route-mapper exact overeenkomen met de class-naam van de controller. Waarom?
+De Kern: Omdat de WebApiControllerFactory deze naam gebruikt als "sleutel" om de juiste controller uit de DI-container te vissen.
+Het Waarom: Dit voorkomt dat je voor elk endpoint handmatig code moet schrijven om de controller te instantiëren. De factory automatiseert dit op basis van de naam.
+
+Vraag 33: Syntax-verschil OpenAPI vs. Oak (Technisch detail)
+Vraag: Welk klein maar cruciaal verschil in syntax bestaat er voor pad-parameters tussen de OpenAPI-specificatie en het Oak-framework?
+De Kern: OpenAPI gebruikt accolades {id}, maar Oak gebruikt een dubbele punt :id.
+Het Waarom: Als je per ongeluk {id} in je code gebruikt (omdat het zo in de YAML staat), zal het webframework de parameter niet herkennen en krijgt de Use Case nooit de juiste data binnen.
+
+- Messaging
+Vraag 34: Messaging & AMQP
+Vraag: In het AMQP protocol (RabbitMQ / LavinMQ) gebruiken we Topic Exchanges. Wat is het verschil tussen de Routing Key en de Binding Key?
+De Kern: De Routing Key is het label dat de zender (publisher) meegeeft. De Binding Key is de patroon-regel die de ontvanger (de queue) instelt.
+Het Waarom: Dit zorgt voor "Loose Coupling". De publisher roept gewoon een feit (Routing Key: accounts.user.created). De publisher weet niet wie er luistert. De queue bepaalt zelf, via de Binding Key (bijv. accounts.user.*), welke berichten hij wil oppikken.
+Analogie: Het postkantoor. Routing Key = Het adres geschreven op de envelop door de zender. Binding Key = Het postvakje in het verdeelcentrum.
+
+Vraag 35: De onderdelen van AMQP (Het Systeem)
+Vraag: Leg in je eigen woorden uit wat een Exchange, een Queue en een Consumer doen in een berichtensysteem.
+De Kern:
+Exchange: De router (postkantoor). Ontvangt berichten en bepaalt waar ze heen moeten.
+Queue: De brievenbus. Slaat berichten op totdat ze gelezen worden.
+Consumer: De ontvanger. Pikt het bericht uit de brievenbus en voert de actie uit.
+Het Waarom: Hierdoor hoeft de zender (publisher) niet te wachten op de ontvanger. Dit heet "Asynchrone communicatie".
+
+Vraag 36: Messaging als Driving én Driven Adapter
+Vraag: Waarom speelt messaging in een Hexagonale Architectuur zowel de rol van een Driving (Primary) als een Driven (Secondary) adapter?
+De Kern: Het hangt af van de richting van het bericht.
+Publishing (zenden): Is een Driven adapter (de core vertelt de buitenwereld dat er iets is gebeurd).
+Consuming (ontvangen): Is een Driving adapter (een extern bericht triggert een Use Case in de core).
+Het Waarom: Messaging is de enige technologie die aan beide kanten van de hexagon kan zitten.
+
+Vraag 37: Topic Wildcards (* vs. #)
+Vraag: Bij Topic Exchanges gebruiken we wildcards in de Binding Keys. Wat is het verschil tussen het sterretje (*) en het hekje (#)?
+De Kern:
+* (Asterisk) staat voor exact één segment (bijv. accounts.*.created).
+# (Hash) staat voor nul of meer segmenten (bijv. accounts.#).
+Het Waarom: Hiermee kan een microservice heel specifiek luisteren naar één soort event, of in één keer een hele "familie" van berichten ontvangen (bijv. alles wat er in de 'Accounts' module gebeurt).
+
+Vraag 38: AsyncAPI als Bron van Waarheid
+Vraag: Waarom gebruiken we een asyncapi.yaml bestand en wat wordt hiermee opgestart?
+De Kern: De AsyncAPI spec is het contract voor messaging (vergelijkbaar met OpenAPI voor web).
+Het Waarom: De infrastructuur leest dit bestand bij het opstarten om automatisch de juiste Exchanges en Queues aan te maken op de server (LavinMQ).
+Gevolg: Als een event niet in de asyncapi.yaml staat, kan het niet verstuurd of ontvangen worden.
+
+Vraag 39: Betrouwbaarheid (Outbox, Inbox en DLQ)
+Vraag: Wat is het doel van de Outbox, de Inbox en de DLQ (Dead Letter Queue)?
+De Kern: Dit zijn veiligheidsmechanismen voor onbetrouwbare netwerken.
+Outbox: Zorgt dat een event áltijd wordt opgeslagen in de database voordat het verzonden wordt (voorkomt verlies).
+Inbox: Zorgt dat de ontvanger een dubbel bericht (duplicate) herkent en niet twee keer uitvoert (Idempotentie).
+DLQ: Een "ziekenhuis-wachtrij" waar mislukte berichten in terechtkomen, zodat ze de rest van het systeem niet blokkeren.
+
+Vraag 40: Domain Event vs. Integration Event
+Vraag: Wat is het verschil tussen een Domain Event en een Integration Event?
+De Kern: De doelgroep en het contract.
+Domain Event: Is intern voor één microservice (bijv. om een logboek bij te werken).
+Integration Event: Is een officieel contract met de buitenwereld (andere microservices).
+Belangrijk: In deze cursus wordt elk Domain Event dat naar de broker gaat automatisch een Integration Event.
+
+Vraag 41: Waarom Topic Exchanges? (Loose Coupling)
+Vraag: Waarom gebruiken we een Topic Exchange in plaats van dat Microservice A gewoon direct een API-call doet naar Microservice B?
+De Kern: Om "Loose Coupling" (losse koppeling) te bereiken.
+Het Waarom: Bij een API-call moet Service A weten dat Service B bestaat. Bij Messaging roept Service A alleen: "Er is een gebruiker aangemaakt!". Hij weet niet wie er luistert. Hierdoor kun je later makkelijk een Service C toevoegen die óók luistert, zonder Service A aan te passen.
+Analogie: Een API-call is een telefoongesprek (1-op-1, beide moeten aanwezig zijn). Messaging is een krantenadvertentie (wie geïnteresseerd is, leest het wel).
+
+Vraag 42: De "Message Controller" (De Broker Adapter)
+Vraag: Wat is de taak van een Message Controller (zoals WhenUserRegisteredRegisterParticipant) aan de ontvangende kant?
+De Kern: Het is een Inbound Adapter die een technisch bericht vertaalt naar een Use Case.
+Het Waarom: Het bericht van de broker is puur JSON (tekst). De Message Controller pakt deze tekst, mapt het naar een Use Case Input object, en roept de Use Case aan.
+Regel: Net als een Web API Controller mag een Message Controller geen business logica bevatten en niet in de database kijken. Hij geeft het werk direct door aan de Core.
+
+Vraag 43: Verificatie (LavinMQ UI)
+Vraag: Hoe kun je tijdens het ontwikkelen controleren of je systeem daadwerkelijk een event heeft gepubliceerd als de ontvangende service nog niet klaar is?
+De Kern: Door gebruik te maken van de Management UI van de broker (LavinMQ/RabbitMQ).
+De Oplossing: Je maakt handmatig een test-queue aan in de UI en bindt deze aan de Exchange met de juiste Routing Key. Als je daarna de actie uitvoert in je app, kun je in de UI op "Get Messages" klikken om te zien of het bericht in je test-queue is aangekomen.
+Het Waarom: Zo bewijs je dat de "zender-kant" (Driven Adapter) correct werkt, onafhankelijk van de "ontvanger-kant".
+
+Vraag 44: Idempotentie & De Inbox (Aanscherping van Vraag 40)
+Vraag: Wat is "Idempotentie" en waarom moet een Message Controller (Consumer) altijd idempotent zijn?
+De Kern: Idempotentie betekent dat het resultaat hetzelfde blijft, of je een bericht nu één keer of tien keer verwerkt.
+Het Waarom: Netwerken zijn onbetrouwbaar. Berichten kunnen dubbel worden afgeleverd ("At-least-once delivery"). Zonder idempotentie zou je bijv. een klant twee keer kunnen factureren voor hetzelfde event.
+De Oplossing: Gebruik een Inbox-tabel. De controller checkt eerst: "Heb ik dit MessageId al eens verwerkt?". Zo ja, dan gooit hij het bericht direct weg zonder de Use Case aan te roepen.
+
+Vraag 45: De FQDN-Conventie voor Routing Keys
+Vraag: Welke standaard gebruiken we voor de naamgeving van Routing Keys en hoe wordt dit vertaald?
+De Kern: We gebruiken de Fully Qualified Domain Name (FQDN), zoals Simplifyme.Accounts.User.Subscribed.
+Het Waarom: Dit zorgt voor een voorspelbaar en uniek contract. Elke microservice weet precies hoe een event van een andere service "heet" en waar het over gaat.
+De Vertaling: De Driven Adapter pakt de rijke C# class-naam (PascalCase) en vertaalt deze naar kleine letters voor de broker (simplifyme.accounts.user.subscribed).
+
+Vraag 46: De Unit of Work & Het "Dual Write" Probleem
+Vraag: Wat is het "Dual Write" probleem en welke rol speelt de Unit of Work bij het publiceren van events?
+De Kern: Het risico dat de database-update slaagt, maar het verzenden van het event naar de broker mislukt (of andersom).
+Het Waarom: Je wilt geen inconsistente status waarbij de database zegt "A", maar de buitenwereld denkt dat er niets is gebeurd.
+De Oplossing: De Unit of Work coördineert dit. Hij "pult" de events pas uit de Aggregates nadat de database-transactie 100% succesvol is ge-commit. De database en de Outbox worden in één klap bijgewerkt.
+
+Vraag 47: Checklist voor een nieuw Event-proces (De workflow)
+Vraag: Wat is de volledige workflow (stappenplan) om een nieuw event-gestuurd proces te implementeren?
+De Kern: Van binnen naar buiten: Domein -> Contract -> Adapter -> Main.
+De 5 Stappen:
+Definieer het event in de Domain Layer (en laat de Aggregate het 'raisen').
+Werk het AsyncAPI contract bij (asyncapi.yaml).
+Implementeer de Publisher (Driven Adapter) of Consumer (Driving Adapter).
+Map in de Consumer het bericht naar de Use Case Input.
+Bedraad alles in de Main Module (DI-registratie).
+
+- Main
+Vraag 48: De Main Module (Onzuiverheid)
+Vraag: Waarom is de Main module bewust "onzuiver" (impure)?
+De Kern: Omdat het de enige plek is die álle lagen (Core, Infra, Framework) mag kennen om ze aan elkaar te kunnen lijmen.
+Het Waarom: Door de onzuiverheid in één module te concentreren, blijven alle andere modules (Domain, Application) "zuiver" en onafhankelijk van technologie.
+
+Vraag 49: De Eénrichtingsverkeer Regel (Dependency Direction)
+Vraag: Wat is de strikte regel voor de afhankelijkheden (dependencies) van en naar de Main module?
+De Kern: Main naar Alles, maar Niets naar Main.
+Het Waarom: Main moet alles kennen om het systeem te kunnen monteren. Echter, als de Core (bijv. een Use Case) naar Main zou wijzen, sleep je per ongeluk hosting- en deployment-zorgen mee naar je businesslogica. Dat moet je koste wat kost voorkomen.
+
+Vraag 50: De Boot Sequence (Add vs Use)
+Vraag: Waarom splitsen we het opstarten in AddModules en UseModules?
+De Kern: Add is voor registratie (onderdelenlijst maken); Use is voor activatie (de machine aanzetten).
+Analogie: In de fabriek (Main) is Add het verzamelen van de motor en wielen. Use is het omdraaien van de sleutel.
+
+Vraag 51: Kernbegrippen (IoC vs. DI vs. Object Graph)
+Vraag: Wat is het verschil tussen Inversion of Control, Dependency Injection en de Object Graph?
+De Kern:
+IoC: Het principe (iets anders levert de medewerkers).
+DI: De techniek (meestal via de constructor).
+Object Graph: Het resultaat (het hele netwerk van verbonden objecten, bijv. Controller -> Use Case -> Repo).
+
+Vraag 52: Configuratie Precedentie (Wie wint?)
+Vraag: Hoe bepaalt .NET welke instelling hij gebruikt bij meerdere bronnen?
+De Kern: De laatste bron wint. (Volgorde: Basis JSON -> Omgevings JSON -> User Secrets -> Env Variables -> Command line).
+Het Waarom: Hierdoor kun je veilige standaardwaarden lokaal overschrijven op de server zonder code aan te passen.
+
+Vraag 53: User Secrets vs. Publish Profiles
+Vraag: Wat is het verschil in doel tussen "User Secrets" en "Publish Profiles" (.pubxml)?
+De Kern: User Secrets zijn voor lokale veiligheid (wachtwoorden niet in Git). Publish Profiles zijn voor deployment intent (hoe verpakken we de app voor de cloud/registry).
+Het Waarom: Beide horen in Main omdat ze te maken hebben met de "rand" van het systeem (hosting/deployment), niet met de kern.
+
+Vraag 54: Dependency Injection Lifetimes
+Vraag: Wat is het verschil tussen Transient, Scoped en Singleton?
+De Kern: Transient = telkens nieuw. Scoped = één per HTTP-request. Singleton = één voor de hele app.
+Het Waarom: Dit regelt veiligheid en geheugenbeheer (bijv. de UnitOfWork moet áltijd Scoped zijn om consistentie binnen één request te garanderen).
+
+Vraag 55: launchSettings.json
+Vraag: Waarom wordt launchSettings.json nooit naar de productie-server gestuurd?
+De Kern: Het is puur voor "developer ergonomics" (lokale instellingen zoals poortnummers voor je IDE).
+Het Waarom: In productie bepaalt de server of de container (bijv. Docker) deze zaken; de instellingen van de computer van de developer zijn daar niet relevant.
+
+Vraag 56: Constructor Injection (Preferred Default)
+Vraag: Waarom is Constructor Injection de standaard keuze?
+De Kern: Het dwingt af dat een object áltijd "geldig" is.
+Het Waarom: Een object kan simpelweg niet aangemaakt worden zonder zijn benodigde poorten (interfaces). Dit maakt afhankelijkheden overduidelijk.
+
+Vraag 57: Pure DI in Unit Tests
+Vraag: Wat is "Pure DI" en waarom gebruiken we dit in tests?
+De Kern: Handmatige compositie met new (zonder container).
+Het Waarom: In tests wil je volledige controle. Je maakt de Use Case handmatig aan en stopt er zelf "nep" (mock) versies van de poorten in.
+
+Vraag 58: Playbook: Nieuwe Use Case toevoegen
+Vraag: Waar in de Main module registreer je een nieuwe Use Case?
+De Kern: In de Application/Module.ts (of Application/Module.cs).
+Het Waarom: Omdat DI-registratie van de applicatielaag een centrale taak is van de Composition Root.
+
+Vraag 59: Playbook: Nieuwe Repository toevoegen
+Vraag: Welke twee stappen zijn nodig in de Persistence module om een nieuwe repository te activeren?
+De Kern: 1. De adapter registreren in de DI-container. 2. De adapter koppelen aan de UnitOfWork constructie.
+Het Waarom: De UnitOfWork moet weten welke repositories hij moet coördineren tijdens een transactie.
+
+Vraag 60: Playbook: Nieuwe AMQP Consumer
+Vraag: Waar gebeurt de koppeling tussen een operationId uit de AsyncAPI en een Message Controller?
+De Kern: In de AmqpControllerFactory.
+Het Waarom: De factory fungeert als de "vertaal-hub" die op basis van de naam uit het contract de juiste controller aanmaakt.
+
+- Distributed Services
+Vraag 61: Modular Monolith First
+Vraag: Waarom wordt er geadviseerd om bijna altijd te starten met een "Modular Monolith" voordat je overstapt naar Microservices?
+De Kern: Een Modular Monolith is één app met hele strenge interne grenzen. Het is een "oefening" voor microservices.
+Het Waarom: Het is goedkoper en makkelijker te beheren. Als je de grenzen (boundaries) niet goed krijgt in een monolith, zal het in een microservice-landschap alleen maar een grotere puinhoop worden ("distributed mud").
+Regel: Splits pas op wanneer autonomie (onafhankelijk releasen) belangrijker wordt dan eenvoud.
+
+Vraag 62: Database-per-Service (Data Ownership)
+Vraag: Waarom is het een harde eis dat elke microservice zijn eigen, private database heeft?
+De Kern: Om de "Integration DB trap" te voorkomen.
+Het Waarom: Als Service A direct in de tabel van Service B leest, en Service B verandert een kolomnaam, dan crasht Service A. Je kunt dan nooit meer onafhankelijk van elkaar een update uitvoeren.
+De Regel: Service A mag alleen data van Service B krijgen via een API (HTTP) of via Events.
+
+Vraag 63: Anti-Corruption Layer (ACL)
+Vraag: Wat is een Anti-Corruption Layer (ACL) en waarom is dit essentieel bij het koppelen van services?
+De Kern: Een vertaallaag aan de grens van je service die externe termen omzet naar jouw eigen interne domein-taal.
+Het Waarom: Je wilt niet dat jouw "schone" domein vervuild raakt met de (soms rommelige) logica of naamgeving van een ander systeem.
+Analogie: Een tolk bij een gesprek tussen twee mensen die verschillende talen spreken. De tolk zorgt dat jij de boodschap begrijpt in jouw eigen woorden.
+
+Vraag 64: Sagas & Transacties (BASE vs ACID)
+Vraag: Je kunt geen "globale transactie" (alles-of-niets) doen over twee microservices heen. Hoe lossen we dit op?
+De Kern: Via een Saga: een reeks lokale transacties met compenserende acties.
+Het Waarom: In een monolith is het ACID (alles slaagt direct). Bij microservices is het BASE (eventual consistency).
+Voorbeeld: Stap 1: Reserveer hotel (slaagt). Stap 2: Betaal vlucht (mislukt). De "compenserende actie" is dan: Annuleer de hotelreservering uit stap 1.
+
+Vraag 65: API Composition vs. Data Replication
+Vraag: Wat is de trade-off tussen "API Composition" en "Data Replication" als je data van een andere service nodig hebt?
+De Kern:
+Composition: Je roept live een andere API aan (altijd verse data, maar traag en afhankelijk van het netwerk).
+Replication: Je slaat een kopie van de data op in je eigen database via events (super snel, maar de data kan een paar seconden verouderd zijn).
+Het Waarom: Je moet per situatie kiezen: heb ik de állerlaatste waarde nu direct nodig, of is "eventually correct" goed genoeg?
+
+Vraag 66: Tracing & Correlation ID's
+Vraag: Waarom is een "Correlation ID" de belangrijkste tool voor het debuggen van distributed services?
+De Kern: Het is een uniek ID dat je aan een request meegeeft en dat door álle betrokken microservices en events wordt meegestuurd.
+Het Waarom: In een monolith staan alle logs in één bestand. Bij microservices staat de logica verspreid over 10 servers. Zonder Correlation ID kun je nooit terugvinden waar in de keten het precies misging.
+
+Vraag 67: Strangler Fig Pattern (Migratie)
+Vraag: Hoe vervang je een oud "Legacy" systeem door een nieuwe microservice zonder de business stil te leggen?
+De Kern: Via het Strangler Fig patroon: je bouwt de nieuwe functionaliteit om de oude heen en verplaatst stukje bij beetje de traffic.
+Analogie: Een klimop (de nieuwe service) die een oude boom (legacy) overwoekert totdat de oude boom uiteindelijk afsterft en alleen de klimop overblijft.
+
+Vraag 68: De "Distributed Tax" (De Kosten)
+Vraag: Wat wordt bedoeld met de "Distributed Tax"?
+De Kern: De extra complexiteit en kosten die je "betaalt" voor het hebben van microservices.
+De Inhoud: Je moet opeens investeren in: Observability (logging/tracing), Resilience (retries/circuit breakers), en complexe CI/CD pipelines.
+Waarschuwing: Als je deze "belasting" niet betaalt, krijg je een onbetrouwbaar systeem.
+
+Vraag 69: Service Granularity (Het Goldilocks probleem)
+Vraag: Wat is het gevaar van microservices die "te klein" (nanoservices) of "te groot" zijn?
+De Kern:
+Te klein: Te veel netwerk-verkeer en complexe afhankelijkheden (je blijft bezig met bellen naar andere services).
+Te groot: Je krijgt een "Distributed Monolith" zonder onafhankelijke deployments.
+De Oplossing: De grootte is "just right" als de service exact aansluit bij één business workflow of transactie-grens.
+
+Vraag 70: Saga Coördinatie (Choreography vs. Orchestration)
+Vraag: Wat is het verschil tussen Choreography en Orchestration bij het uitvoeren van een Saga?
+De Kern:
+Choreography (Decentraal): Services reageren op elkaars events (zoals dansers die op de muziek letten). Geen centrale leider.
+Orchestration (Centraal): Eén centrale "Orchestrator" vertelt elke service wat hij moet doen (zoals een dirigent).
+De Trade-off: Choreography is simpeler en minder gekoppeld, maar Orchestration is makkelijker te overzien bij hele complexe processen.
+
+Vraag 71: Sync vs. Async Integratie
+Vraag: Wanneer kies je voor een synchrone call (HTTP) en wanneer voor asynchroon (Messaging)?
+De Kern:
+Sync: Als de gebruiker het antwoord nu direct nodig heeft om verder te kunnen (bijv. inloggen of een zoekopdracht).
+Async: Als de taak op de achtergrond kan (bijv. een bevestigingsmail sturen of een bestelling verwerken).
+Analogie: Sync is de "Fastfood" drive-thru (je wacht voor het raam). Async is het "Postkantoor" (je dropt de brief en gaat naar huis).
+
+Vraag 72: Identity Propagation (Vertrouwen)
+Vraag: Hoe weet Service B wie de oorspronkelijke gebruiker was als hij wordt aangeroepen door Service A?
+De Kern: Door het doorsturen van de Identity (JWT) en het gebruik van mTLS (service identiteit).
+Het Waarom: Als Service A alleen maar "zichzelf" is, kan Service B nooit controleren of de eindgebruiker wel de juiste rechten heeft voor die specifieke actie.
+Het Resultaat: Een duidelijke trail: "Alice belde de Gateway, die belde Taskly, die belde Payments."
+
+Vraag 73: Fallacies of Distributed Computing (De harde realiteit)
+Vraag: Waarom is een functie-aanroep in een monolith fundamenteel anders dan een aanroep tussen twee microservices?
+De Kern: Vanwege de fysieke realiteit van het netwerk: het netwerk is onbetrouwbaar, latentie is niet nul, en bandbreedte is niet oneindig.
+Het Waarom: In een monolith is een aanroep een simpele regel code die altijd werkt. Bij microservices is het een overeenkomst tussen teams en een risico op gedeeltelijk falen. Je moet code schrijven die rekening houdt met het feit dat "de overkant" er even niet is.
+
+Vraag 74: Event Taxonomie (Domain vs. Integration)
+Vraag: Waarom maken we een strikt onderscheid tussen een Domain Event en een Integration Event?
+De Kern:
+Domain Event: Is voor eigen gebruik (intern), bevat alle details ("full fidelity").
+Integration Event: Is een publiek contract (extern), heeft een stabiel schema en bevat alleen wat anderen echt moeten weten.
+Het Waarom: Je wilt niet dat andere teams afhankelijk worden van jouw interne datastructuur. Als jij intern iets verandert, mag het contract (Integration Event) niet zomaar breken.
+
+Vraag 75: Shared Libraries (Koppeling via de achterdeur)
+Vraag: Waarom is het een gevaar om grote "Shared Libraries" (bijv. een gezamenlijk Domain.dll) te gebruiken tussen verschillende microservices?
+De Kern: Het introduceert koppeling via de achterdeur.
+Het Waarom: Als Service A en Service B dezelfde library gebruiken, en Service A heeft een wijziging nodig, moet Service B ook verplicht updaten en releasen. Dit vernietigt de autonomie (onafhankelijkheid) van de teams.
+De Regel: Houd shared libraries extreem klein of vermijd ze volledig; kopieer liever een klein beetje code (of een contract).
+
+Vraag 76: API Gateway vs. BFF (Backend for Frontend)
+Vraag: Wat is het verschil tussen een standaard API Gateway en een BFF?
+De Kern:
+API Gateway: De algemene "voordeur" voor technische zaken (beveiliging, rate limiting).
+BFF: Een specifieke adapter voor één type client (bijv. één BFF voor de Mobiele App, één voor de Website).
+Het Waarom: Hierdoor hoeven je interne microservices niet te weten hoe de UI eruitziet. De BFF giet de data in de juiste vorm voor het scherm, zodat de core "schoon" blijft.
+
+Vraag 77: Versioning: Expand and Contract
+Vraag: Hoe verander je een API of Event zonder alle andere services te laten crashen?
+De Kern: Via het Expand and Contract patroon.
+De Stappen: 1. Voeg het nieuwe veld toe (Expand). 2. Wacht tot iedereen is overgestapt. 3. Verwijder pas dan het oude veld (Contract).
+Het Waarom: In een gedistribueerd systeem kun je nooit "iedereen tegelijk" updaten. Je moet altijd tijdelijk twee versies ondersteunen.
+
+Vraag 78: Consumer-Driven Contract (CDC) Testing
+Vraag: Hoe voorkom je dat een kleine wijziging in Service A onbedoeld Service B kapot maakt in een microservice landschap?
+De Kern: Via CDC-tests die in de CI-pipeline draaien.
+Het Waarom: Het dwingt "eerlijkheid" af. Service B (de consument) legt zijn verwachtingen vast in een test. Als Service A (de zender) iets wil veranderen dat die verwachting breekt, faalt de build van Service A direct.
+
+Vraag 79: Service Mesh (Sidecars)
+Vraag: Wat is de rol van een "Service Mesh" en zijn "Sidecars" in moderne architectuur?
+De Kern: Het centraliseren van technische "rompslomp" (zoals mTLS beveiliging, tracing en retries) in een aparte container (de Sidecar) die naast je app draait.
+Het Waarom: Hierdoor hoeft de developer deze ingewikkelde netwerk-logica niet zelf in zijn code te programmeren. De infrastructuur lost het op, zodat de developer zich kan focussen op de business logica.

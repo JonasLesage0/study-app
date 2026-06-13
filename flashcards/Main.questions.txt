@@ -1,0 +1,33 @@
+Main Component (not layer): Questions
+
+Below are 10 focused questions about the configurator/composition root.
+🧩 Composition Root Responsibilities
+1. Why Main Is Allowed to Be “Dirty”
+
+Why is it acceptable that Main/Modules imports Application, Infrastructure, and framework types together, while Domain/Application must stay clean?
+
+2. Module Wiring Order
+
+In AddModules(), why is module order important (for example Domain Events, Persistence, Messaging, Web API, Workers)? What could break if the order is wrong?
+3. Startup Pipeline
+
+Trace what happens from Program.cs (builder.Services.AddModules(...) and await builder.Build().UseModules()) to a running app. Which steps are service registration vs runtime execution?
+⚙️ DI, Ports, and Runtime Configuration
+4. Port-to-Adapter Registration
+
+In EF modules (AddEFCoreServices), how are driven ports (IUnitOfWork, repositories, queries) mapped to concrete adapters? Why is this mapping the configurator’s job?
+5. Keyed Messaging Controllers
+
+In Messaging modules, controllers are registered with AddKeyedScoped<IController<ConsumerContext>, ...>(OperationId...). Explain how this enables dispatch by AsyncAPI operation ID at runtime.
+6. Options Binding Boundary
+
+Why are config sections (PaymentsOptions, worker options, broker settings) bound in Main/Infrastructure wiring instead of passing IConfiguration into use cases?
+7. Lifetime Decisions
+
+Compare lifetimes used in Main wiring (Singleton, Scoped, HostedService). Why should publishers/brokers often be singletons while use cases/repositories are scoped?
+8. Reflection Registration Trade-offs
+
+ApplicationModule.RegisterPolicies() auto-registers IPolicy<> implementations via reflection. Why place this boot-time convention in configurator/module wiring, and what operational risks come with it?
+9. Swapping Infrastructure Implementations
+
+If you want to switch from EF Core to MemoryLane (or add another persistence adapter), which Main files should change, and which layers should remain untouched?

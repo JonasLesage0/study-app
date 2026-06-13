@@ -1,0 +1,70 @@
+Hexagonal Boundaries
+1. Configurator Role
+In hexagonal terms, the Main Composition Root plays the role of the configurator. Files and folders such as the entry point Program.cs, module registration in src/Main/Modules/, environment/configuration (appsettings.{Development|Test}.json), deployment artifacts (publish profiles, container/image settings) are responsible for wiring the application together. This is essential because it is the only place where "ports meet adapters," handling Dependency Injection (DI) registration and starting the runtime pipeline.
+2. Inside vs Outside
+Inside the app: This represents the technology-agnostic core where pure business logic lives. Concrete examples include Aggregate Roots (Payment, User, TodoList), Domain Events (PaymentExpired, UserSubscribed), and Application Use Cases (SubscribeUser).
+Outside the app: This is the Infrastructure layer and Main Composition Root that interact with the physical world. Infrastructure classes clearly outside the boundary include Persistence Adapters (PaymentRepository, DomainDbContext, EntityFrameworkUoW), Messaging Adapters (AmqpTopicPublisher, consumer controllers), and Background Workers (ScanForExpiredPaymentsJob).
+3. Driving vs Driven Adapters
+Driving Adapters (Primary, inbound, at the front door): Web API controllers and Messaging Controllers (Consumers). The outside triggers use cases (app). Driven Adapters (Secondary, outbound, at the back door): Messaging Domain Publishers and Repositories. The inside (use case from app) triggers these for tasks like saving data (in repos) or sending messages.
+4. Composition Root Coupling
+High coupling is acceptable in the Composition Root (Main) because its explicit architectural responsibility is to wire every component together to create a running application. By concentrating all technical dependencies (frameworks, databases, brokers) here, the Domain and Application layers are shielded from "dependency clutter," remaining clean and framework-agnostic.
+5. Port Ownership Check
+Example 1: PostgresTournamentRepository (Infrastructure) implements the TournamentRepository port. This port is defined in the Domain Layer and is a Driven (Secondary) Port.
+Example 2: EntityFrameworkUoW (Infrastructure) implements the IUnitOfWork port. This port is defined in the Application Layer and is a Driven (Secondary) Port.
+6. Repositories and Aggregate Roots
+Repositories are defined only for Aggregate Roots because the Aggregate acts as the consistency boundary. This protects the DDD rule that internal entities cannot be accessed or modified directly; the system must load the entire Aggregate through its root to ensure all business invariants are enforced.
+--------------------------------------------------------------------------------
+Persistence Adapters, Read/Write UoW
+7. DomainDbContext vs QueryDbContext
+This split supports CQRS (Command Query Responsibility Segregation). DomainDbContext (Writes): optimized for state transitions and protecting business rules by mapping domain aggregates and value objects. QueryDbContext (Reads): optimized for efficiently retrieving flat DTOs with NoTracking, which is fast and prevents accidental updates.
+8. Query Tracking Strategy
+QueryDbContext uses NoTracking as a sensible default because query-side adapters return flat DTOs rather than domain entities. Since these DTOs are read-only and never updated in the same scope, disabling change tracking significantly improves performance and prevents accidental updates.
+9. Unit of Work Responsibilities
+Do(): Ensures Atomicity (Transactional Consistency). It manages the database transaction lifecycle, ensuring that all changes are committed ("all-or-nothing") and that Domain Events are only dispatched after a successful commit. Save<TRepository>(): Acts as a registration mechanism to stage/track changes. In the EfCoreGenericRepository, it adds detached (new/untracked) entities to the ORM tracker.
+10. Repository Pattern vs Direct DbContext
+Using repository ports provides Dependency Inversion, ensuring the Application layer remains independent of database technology. This allows for easier unit testing (using mocks) and the ability to swap the persistence implementation (e.g., from SQL to MongoDB) without touching business logic.
+11. Generic Repository Save Behavior
+If no explicit Update() is called, updates are persisted via Change Tracking. When an aggregate is loaded, the ORM (EF, MongoDB, etc.) monitors its state; the Unit of Work then automatically applies changes during commit. A detached entity is untracked/not yet added via Save().
+12. Strongly Typed IDs in EF
+EntityIdConverter<TId> and explicit .HasConversion(...) mappings allow the Domain model to use rich types (like TournamentId, DueDate) instead of primitive strings, Guids, Dates, etc. This protects the model from primitive obsession at the boundary (Infrastructure layer) while allowing the database to still use standard primitive columns.
+13. Owned Value Objects
+OwnsOne mapping for PaymentPlan is aligned with Value Object semantics because a Value Object has no identity of its own and exists only as part of an entity. This mapping stores the Value Object's data in the same table as the parent entity, matching its lifecycle.
+14. EF UoW
+Domain events are dispatched in the SavedChangesInterceptor (or hook) PublishDomainEventsInterceptor. This is done to ensure that events are only published after the database transaction has successfully committed.
+15. Startup Migrations and Seeding
+Restricting automatic migrations and seeding primarily avoids the risks of polluting production with dummy data, destructive database schema changes, or data loss from reset scripts. However, risks remain that manual production database states may drift from the code if deployment scripts are not handled strictly.
+16. Configuration Boundary
+Application use cases should not depend on IConfiguration because it is a framework-specific detail. Instead, configuration values should be translated into strongly-typed Application Ports or Options in the Main/Infrastructure wiring.
+--------------------------------------------------------------------------------
+Messaging Infrastructure and AsyncAPI
+17. Bounded Context Queue Prefix
+The parser uses the BoundedContext as a prefix to ensure that queues are namespaced. This prevents naming collisions in a shared message broker and clearly identifies which service owns specific messaging infrastructure.
+18. OperationId Contract
+During startup, controllers are registered in the DI container using the OperationId as a key. At runtime, when a message is received, the MessageProcessor identifies the operation ID from the message metadata and resolves the corresponding controller from the container using that key.
+19. Controller Dispatch with DI Scope
+Creating a scope per message ensures transactional isolation. It guarantees that all dependencies (like the Unit of Work) are fresh for each message, preventing state leakage between different message handling operations.
+20. Publisher as Domain Event Listener
+Implementing IDomainEventListener via AmqpTopicPublisher creates a driven adapter that bridges the application core to external infrastructure. This keeps the domain layer "blissfully ignorant" of technical details (messaging mechanics) like AMQP protocols or broker details (e.g., exchanges, routing keys, and queues). As a listener, the publisher translates internal Domain Events (state changes) into external Integration Events (messages for other services) only after the Unit of Work has successfully committed the database transaction.
+21. Reflection-based Policy Discovery
+Benefits: It provides a boot-time convention that automatically registers new policies, reducing manual code changes.
+Operational Risks: It can result in slower startup times and creates a "hidden" dependency graph that makes debugging missing registrations more difficult.
+--------------------------------------------------------------------------------
+Cross-Context Integration and ACL
+22. Payments ACL Decision
+Translating Accounts subscription plans to Payments plans is an Anti-Corruption Layer (ACL) concern that lives in the Messaging Controller (Infrastructure). It protects the Payments service from being tightly coupled to the naming conventions of an external service. Without ACL, changes in one microservice would cascade into all the layers of another service.
+23. Taskly ACL Decision
+SubscriptionPlanAcl.ToAccessLevel() protects Taskly by normalizing external Accounts data (e.g., "FreeTier" -> "Restricted") at the boundary. This ensures Domain Purity by preventing external modeling decisions from leaking into Taskly's core logic, keeping its internal access rules stable even if Accounts changes its vocabulary.
+24. Event Contract Placement
+Integration event DTOs are contracts in the Infrastructure layer, outside the core. Domain entities should never be serialized directly because they contain private state and logic; exposing them would cause tight semantic coupling and leak internal model details across service boundaries. By using DTOs as stable external contracts, a service maintains its autonomy: it can refactor its internal domain model without triggering breaking changes for external consumers.
+25. One Exchange, Many Contexts
+Coupling Reduced: Services achieve Loose Coupling because they don't know each other's physical locations, endpoints, or even their existence. The exchange acts as a "post office" (router), ensuring that producers only need to know "what" happened, not "who" (which service) needs to know. Coupling Remaining: Services remain contractually coupled via shared integration contracts (event schemas) and routing key naming conventions. Because these events are "public APIs," any change to the message structure or the routing key remains a breaking change for all downstream consumers.
+--------------------------------------------------------------------------------
+Persistence Modeling Deep Dive
+26. OwnsMany in EF Core
+OwnsMany helps model child objects (like TodoItems) that belong strictly to an aggregate state. It is a better fit because it enforces the rule that these items can only be modified through the Aggregate Root, preventing developers from bypassing business logic by accessing items directly.
+27. TodoList Configuration vs TodoItems Configuration
+In Taskly, TodoItems have no business meaning outside of a TodoList. Using OwnsMany instead of separate roots ensures they are loaded and persisted atomically as a single unit. This protects the aggregate's consistency boundary, ensuring that invariants (e.g., blocking modifications to a locked list) are strictly enforced across all items during a single transaction.
+--------------------------------------------------------------------------------
+Environment Setup
+28. Environment Isolation
+Environment Isolation is achieved by using unique Host Port Mapping in docker-compose files. While multiple services might internally listen on the same port (e.g., all APIs on 8000 or all Postgres instances on 5000), they are mapped to unique external ports on the host machine (e.g., 400xx for Taskly and 401xx for Accounts). This allows the entire ecosystem to run simultaneously on a single machine without local port collisions.
