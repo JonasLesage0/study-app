@@ -41,6 +41,7 @@ export class UiSettingsStore {
       selectedMode: "flashcards",
       selectedPart: ALL_PARTS_VALUE,
       disableFlipAnimation: true,
+      enableBoldMarkdown: true,
       theme: "navy",
     };
 
@@ -74,6 +75,10 @@ export class UiSettingsStore {
           typeof parsed?.disableFlipAnimation === "boolean"
             ? parsed.disableFlipAnimation
             : defaultSettings.disableFlipAnimation,
+        enableBoldMarkdown:
+          typeof parsed?.enableBoldMarkdown === "boolean"
+            ? parsed.enableBoldMarkdown
+            : defaultSettings.enableBoldMarkdown,
         theme: this.normalizeTheme(parsed, defaultSettings.theme),
       };
     } catch {

@@ -12,6 +12,7 @@ import {
   getDeckNames,
   getPartNames,
   getQuizFeedbackState,
+  renderBoldMarkdown,
 } from "./study-app-view.js";
 
 export class StudyApp {
@@ -68,6 +69,12 @@ export class StudyApp {
       this.uiSettings.disableFlipAnimation = event.target.checked;
       this.uiSettingsStore.save(this.uiSettings);
       this.applyUiSettings();
+    });
+
+    this.elements.enableBoldMarkdownToggle.addEventListener("change", (event) => {
+      this.uiSettings.enableBoldMarkdown = event.target.checked;
+      this.uiSettingsStore.save(this.uiSettings);
+      this.render();
     });
 
     this.elements.themeSelect.addEventListener("change", (event) => {
@@ -163,6 +170,7 @@ export class StudyApp {
     this.elements.modeSelect.value = this.uiSettings.selectedMode;
     this.elements.showToolsToggle.checked = this.uiSettings.showDeckTools;
     this.elements.disableFlipAnimationToggle.checked = this.uiSettings.disableFlipAnimation;
+    this.elements.enableBoldMarkdownToggle.checked = this.uiSettings.enableBoldMarkdown;
     this.elements.themeSelect.value = this.uiSettings.theme;
     this.elements.workspace.classList.toggle("focus-mode", !this.uiSettings.showDeckTools);
     document.body.classList.remove("theme-white", "theme-navy", "theme-dark-modern");
@@ -317,15 +325,23 @@ export class StudyApp {
       const card = this.cards[this.currentIndex];
 
       this.elements.progress.textContent = `${this.currentIndex + 1} / ${this.cards.length}`;
-      this.elements.questionText.textContent = card.question;
-      this.elements.answerText.textContent = card.answer;
+      renderBoldMarkdown(this.elements.questionText, card.question, {
+        enabled: this.uiSettings.enableBoldMarkdown,
+      });
+      renderBoldMarkdown(this.elements.answerText, card.answer, {
+        enabled: this.uiSettings.enableBoldMarkdown,
+      });
       this.elements.card.classList.toggle("is-flipped", this.isFlipped);
       return;
     }
 
     this.elements.progress.textContent = "0 / 0";
-    this.elements.questionText.textContent = "No cards found in the configured files.";
-    this.elements.answerText.textContent = "Add a custom card or verify your source files.";
+    renderBoldMarkdown(this.elements.questionText, "No cards found in the configured files.", {
+      enabled: this.uiSettings.enableBoldMarkdown,
+    });
+    renderBoldMarkdown(this.elements.answerText, "Add a custom card or verify your source files.", {
+      enabled: this.uiSettings.enableBoldMarkdown,
+    });
     this.elements.card.classList.remove("is-flipped");
   }
 
@@ -341,7 +357,11 @@ export class StudyApp {
 
     const question = this.quizQuestions[this.currentQuizIndex];
     this.elements.progress.textContent = `${this.currentQuizIndex + 1} / ${this.quizQuestions.length}`;
-    this.elements.quizQuestionText.textContent = `${question.part} - ${question.number}. ${question.text}`;
+    renderBoldMarkdown(
+      this.elements.quizQuestionText,
+      `${question.part} - ${question.number}. ${question.text}`,
+      { enabled: this.uiSettings.enableBoldMarkdown },
+    );
     this.elements.quizAnswers.innerHTML = "";
 
     for (const answer of question.answers) {
@@ -351,6 +371,7 @@ export class StudyApp {
             document,
             selectedQuizAnswers: this.selectedQuizAnswers,
             isQuizChecked: this.isQuizChecked,
+            enableBoldMarkdown: this.uiSettings.enableBoldMarkdown,
             onToggleAnswer: (letter) => this.toggleQuizAnswer(letter),
           },
           answer,

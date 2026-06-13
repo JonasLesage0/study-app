@@ -147,14 +147,38 @@ function isQuizPartHeading(line) {
   return /^deel\s+\d+(?:\s+.+)?$/i.test(line);
 }
 
-function appendQuizLine(currentQuestion, currentAnswer, plainLine) {
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeTrailingUnmatchedBold(text) {
+  const boldMarkers = text.match(/\*\*/g) || [];
+
+  if (boldMarkers.length % 2 === 1 && text.endsWith("**")) {
+    return text.slice(0, -2).trim();
+  }
+
+  return text;
+}
+
+function getMarkdownQuestionText(line, number, fallbackText) {
+  const numberPattern = escapeRegExp(number);
+  const questionPrefixPattern = new RegExp(
+    `^\\*{0,2}\\s*${numberPattern}\\s*(?:\\*+)?\\s*\\.\\s*(?:\\*+)?\\s*`,
+  );
+  const markdownText = line.replace(questionPrefixPattern, "").trim();
+
+  return removeTrailingUnmatchedBold(markdownText || fallbackText);
+}
+
+function appendQuizLine(currentQuestion, currentAnswer, markdownLine) {
   if (currentAnswer) {
-    currentAnswer.text = `${currentAnswer.text} ${plainLine}`.trim();
+    currentAnswer.text = `${currentAnswer.text} ${markdownLine}`.trim();
     return;
   }
 
   if (currentQuestion) {
-    currentQuestion.text = `${currentQuestion.text} ${plainLine}`.trim();
+    currentQuestion.text = `${currentQuestion.text} ${markdownLine}`.trim();
   }
 }
 
@@ -202,7 +226,7 @@ export function parseQuizQuestionsFromMarkdown(text, source) {
       currentQuestion = {
         id: `${source}-${currentPart}-${questionMatch[1]}`,
         number: questionMatch[1],
-        text: questionMatch[2],
+        text: getMarkdownQuestionText(line, questionMatch[1], questionMatch[2]),
         part: currentPart,
         source,
         answers: [],
@@ -213,7 +237,8 @@ export function parseQuizQuestionsFromMarkdown(text, source) {
     const answerMatch = plainLine.match(/^(JUIST:\s*)?([A-Z])\.\s+(.+)/i);
 
     if (answerMatch && currentQuestion) {
-      const answerText = answerMatch[3].trim();
+      const markdownAnswerMatch = line.match(/^(JUIST:\s*)?([A-Z])\.\s+(.+)/i);
+      const answerText = (markdownAnswerMatch?.[3] || answerMatch[3]).trim();
 
       if (/^JUIST:?\s*$/i.test(answerText)) {
         nextAnswerIsCorrect = true;
@@ -231,7 +256,7 @@ export function parseQuizQuestionsFromMarkdown(text, source) {
       continue;
     }
 
-    appendQuizLine(currentQuestion, currentAnswer, plainLine);
+    appendQuizLine(currentQuestion, currentAnswer, line);
   }
 
   finishQuestion();

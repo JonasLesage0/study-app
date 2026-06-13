@@ -26,6 +26,7 @@ export function createStudyAppElements() {
     answerInput: document.querySelector("#answer-input"),
     showToolsToggle: document.querySelector("#show-tools-toggle"),
     disableFlipAnimationToggle: document.querySelector("#disable-flip-animation-toggle"),
+    enableBoldMarkdownToggle: document.querySelector("#enable-bold-markdown-toggle"),
     themeSelect: document.querySelector("#theme-select"),
     partSelect: document.querySelector("#part-select"),
     partField: document.querySelector("#part-field"),
@@ -42,8 +43,46 @@ export function getPartNames(questions) {
   return [...new Set(questions.map((question) => question.part).filter(Boolean))];
 }
 
+export function renderBoldMarkdown(element, text, options = {}) {
+  const { enabled = true } = options;
+  element.textContent = "";
+
+  if (!enabled) {
+    element.textContent = String(text ?? "").replaceAll("**", "");
+    return;
+  }
+
+  const ownerDocument = element.ownerDocument;
+  const source = String(text ?? "");
+  const boldPattern = /\*\*(.+?)\*\*/g;
+  let cursor = 0;
+  let match = boldPattern.exec(source);
+
+  while (match) {
+    if (match.index > cursor) {
+      element.append(ownerDocument.createTextNode(source.slice(cursor, match.index)));
+    }
+
+    const strong = ownerDocument.createElement("strong");
+    strong.textContent = match[1];
+    element.append(strong);
+    cursor = match.index + match[0].length;
+    match = boldPattern.exec(source);
+  }
+
+  if (cursor < source.length) {
+    element.append(ownerDocument.createTextNode(source.slice(cursor)));
+  }
+}
+
 export function createQuizAnswerButton(context, answer) {
-  const { document, selectedQuizAnswers, isQuizChecked, onToggleAnswer } = context;
+  const {
+    document,
+    selectedQuizAnswers,
+    isQuizChecked,
+    enableBoldMarkdown,
+    onToggleAnswer,
+  } = context;
   const button = document.createElement("button");
   const isSelected = selectedQuizAnswers.has(answer.letter);
 
@@ -51,7 +90,7 @@ export function createQuizAnswerButton(context, answer) {
   button.className = "quiz-answer";
   button.dataset.answer = answer.letter;
   button.setAttribute("aria-pressed", String(isSelected));
-  button.textContent = `${answer.letter}. ${answer.text}`;
+  renderBoldMarkdown(button, `${answer.letter}. ${answer.text}`, { enabled: enableBoldMarkdown });
 
   if (isSelected) {
     button.classList.add("is-selected");
@@ -62,7 +101,9 @@ export function createQuizAnswerButton(context, answer) {
 
     if (answer.isCorrect) {
       button.classList.add("is-correct");
-      button.textContent = `JUIST: ${button.textContent}`;
+      renderBoldMarkdown(button, `JUIST: ${answer.letter}. ${answer.text}`, {
+        enabled: enableBoldMarkdown,
+      });
     } else if (isSelected) {
       button.classList.add("is-wrong");
     }
