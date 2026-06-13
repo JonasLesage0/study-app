@@ -148,7 +148,7 @@ function isQuizPartHeading(line) {
 }
 
 function escapeRegExp(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 function removeTrailingUnmatchedBold(text) {
@@ -164,7 +164,7 @@ function removeTrailingUnmatchedBold(text) {
 function getMarkdownQuestionText(line, number, fallbackText) {
   const numberPattern = escapeRegExp(number);
   const questionPrefixPattern = new RegExp(
-    `^\\*{0,2}\\s*${numberPattern}\\s*(?:\\*+)?\\s*\\.\\s*(?:\\*+)?\\s*`,
+    String.raw`^\*{0,2}\s*${numberPattern}\s*(?:\*+)?\s*\.\s*(?:\*+)?\s*`,
   );
   const markdownText = line.replace(questionPrefixPattern, "").trim();
 
