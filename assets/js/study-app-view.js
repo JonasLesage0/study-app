@@ -26,9 +26,7 @@ export function createStudyAppElements() {
     answerInput: document.querySelector("#answer-input"),
     showToolsToggle: document.querySelector("#show-tools-toggle"),
     disableFlipAnimationToggle: document.querySelector("#disable-flip-animation-toggle"),
-    deckSelect: document.querySelector("#deck-select"),
     partSelect: document.querySelector("#part-select"),
-    deckField: document.querySelector("#deck-field"),
     partField: document.querySelector("#part-field"),
   };
 }

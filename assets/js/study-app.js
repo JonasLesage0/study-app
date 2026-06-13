@@ -1,4 +1,4 @@
-import { ALL_DECKS_VALUE, ALL_PARTS_VALUE, CUSTOM_DECK_NAME } from "./config.js";
+import { ALL_PARTS_VALUE, CUSTOM_DECK_NAME } from "./config.js";
 import {
   loadCardsFromPairedSourceFiles,
   loadCardsFromSourceFiles,
@@ -74,21 +74,16 @@ export class StudyApp {
       this.uiSettings.selectedMode = event.target.value;
       this.uiSettingsStore.save(this.uiSettings);
       this.applyUiSettings();
+      this.updatePartOptions();
+      this.applySelectedPartFilter();
       this.render();
       this.updateSourceStatus(this.lastErrors, this.lastSourceCardCount, this.lastCustomCardCount);
     });
 
-    this.elements.deckSelect.addEventListener("change", (event) => {
-      this.uiSettings.selectedDeck = event.target.value;
-      this.uiSettingsStore.save(this.uiSettings);
-      this.applyDeckFilter();
-      this.updateSourceStatus(this.lastErrors, this.lastSourceCardCount, this.lastCustomCardCount);
-    });
-
     this.elements.partSelect.addEventListener("change", (event) => {
-      this.uiSettings.selectedQuizPart = event.target.value;
+      this.uiSettings.selectedPart = event.target.value;
       this.uiSettingsStore.save(this.uiSettings);
-      this.applyQuizPartFilter();
+      this.applySelectedPartFilter();
       this.updateSourceStatus(this.lastErrors, this.lastSourceCardCount, this.lastCustomCardCount);
     });
 
@@ -123,7 +118,7 @@ export class StudyApp {
       });
 
       this.elements.addCardForm.reset();
-      this.uiSettings.selectedDeck = CUSTOM_DECK_NAME;
+      this.uiSettings.selectedPart = CUSTOM_DECK_NAME;
       this.uiSettingsStore.save(this.uiSettings);
       await this.reloadDeck();
 
@@ -165,44 +160,16 @@ export class StudyApp {
     this.elements.workspace.classList.toggle("focus-mode", !this.uiSettings.showDeckTools);
     document.body.classList.toggle("no-flip-animation", this.uiSettings.disableFlipAnimation);
     document.body.classList.toggle("quiz-mode", this.uiSettings.selectedMode === "quizzes");
-    this.elements.deckField.hidden = this.uiSettings.selectedMode === "quizzes";
-    this.elements.partField.hidden = this.uiSettings.selectedMode !== "quizzes";
     this.elements.flashcardPanel.hidden = this.uiSettings.selectedMode === "quizzes";
     this.elements.quizPanel.hidden = this.uiSettings.selectedMode !== "quizzes";
-    this.elements.deckSelect.value = this.uiSettings.selectedDeck;
-    this.elements.partSelect.value = this.uiSettings.selectedQuizPart;
+    this.elements.partSelect.value = this.uiSettings.selectedPart;
   }
 
-  updateDeckOptions() {
-    const deckNames = getDeckNames(this.allCards);
-
-    this.elements.deckSelect.innerHTML = "";
-
-    const allDeckOption = document.createElement("option");
-    allDeckOption.value = ALL_DECKS_VALUE;
-    allDeckOption.textContent = "All decks";
-    this.elements.deckSelect.append(allDeckOption);
-
-    for (const deckName of deckNames) {
-      const option = document.createElement("option");
-      option.value = deckName;
-      option.textContent = deckName;
-      this.elements.deckSelect.append(option);
-    }
-
-    if (
-      this.uiSettings.selectedDeck !== ALL_DECKS_VALUE &&
-      !deckNames.includes(this.uiSettings.selectedDeck)
-    ) {
-      this.uiSettings.selectedDeck = ALL_DECKS_VALUE;
-      this.uiSettingsStore.save(this.uiSettings);
-    }
-
-    this.elements.deckSelect.value = this.uiSettings.selectedDeck;
-  }
-
-  updateQuizPartOptions() {
-    const partNames = getPartNames(this.allQuizQuestions);
+  updatePartOptions() {
+    const partNames =
+      this.uiSettings.selectedMode === "quizzes"
+        ? getPartNames(this.allQuizQuestions)
+        : getDeckNames(this.allCards);
 
     this.elements.partSelect.innerHTML = "";
 
@@ -219,21 +186,42 @@ export class StudyApp {
     }
 
     if (
-      this.uiSettings.selectedQuizPart !== ALL_PARTS_VALUE &&
-      !partNames.includes(this.uiSettings.selectedQuizPart)
+      this.uiSettings.selectedPart !== ALL_PARTS_VALUE &&
+      !partNames.includes(this.uiSettings.selectedPart)
     ) {
-      this.uiSettings.selectedQuizPart = ALL_PARTS_VALUE;
+      this.uiSettings.selectedPart = ALL_PARTS_VALUE;
       this.uiSettingsStore.save(this.uiSettings);
     }
 
-    this.elements.partSelect.value = this.uiSettings.selectedQuizPart;
+    this.elements.partSelect.value = this.uiSettings.selectedPart;
   }
 
-  applyDeckFilter() {
-    if (this.uiSettings.selectedDeck === ALL_DECKS_VALUE) {
+  applySelectedPartFilter() {
+    if (this.uiSettings.selectedMode === "quizzes") {
+      if (this.uiSettings.selectedPart === ALL_PARTS_VALUE) {
+        this.quizQuestions = [...this.allQuizQuestions];
+      } else {
+        this.quizQuestions = this.allQuizQuestions.filter(
+          (question) => question.part === this.uiSettings.selectedPart,
+        );
+      }
+
+      if (this.quizQuestions.length === 0) {
+        this.currentQuizIndex = 0;
+      } else {
+        this.currentQuizIndex = Math.min(this.currentQuizIndex, this.quizQuestions.length - 1);
+      }
+
+      this.selectedQuizAnswers.clear();
+      this.isQuizChecked = false;
+      this.render();
+      return;
+    }
+
+    if (this.uiSettings.selectedPart === ALL_PARTS_VALUE) {
       this.cards = [...this.allCards];
     } else {
-      this.cards = this.allCards.filter((card) => card.deck === this.uiSettings.selectedDeck);
+      this.cards = this.allCards.filter((card) => card.deck === this.uiSettings.selectedPart);
     }
 
     if (this.cards.length === 0) {
@@ -246,32 +234,12 @@ export class StudyApp {
     this.render();
   }
 
-  applyQuizPartFilter() {
-    if (this.uiSettings.selectedQuizPart === ALL_PARTS_VALUE) {
-      this.quizQuestions = [...this.allQuizQuestions];
-    } else {
-      this.quizQuestions = this.allQuizQuestions.filter(
-        (question) => question.part === this.uiSettings.selectedQuizPart,
-      );
-    }
-
-    if (this.quizQuestions.length === 0) {
-      this.currentQuizIndex = 0;
-    } else {
-      this.currentQuizIndex = Math.min(this.currentQuizIndex, this.quizQuestions.length - 1);
-    }
-
-    this.selectedQuizAnswers.clear();
-    this.isQuizChecked = false;
-    this.render();
-  }
-
   updateSourceStatus(errors, sourceCardCount, customCardCount) {
     if (this.uiSettings.selectedMode === "quizzes") {
       const selectedPartLabel =
-        this.uiSettings.selectedQuizPart === ALL_PARTS_VALUE
+        this.uiSettings.selectedPart === ALL_PARTS_VALUE
           ? "All parts"
-          : this.uiSettings.selectedQuizPart;
+          : this.uiSettings.selectedPart;
       const summary = `Showing ${this.quizQuestions.length} of ${this.allQuizQuestions.length} quiz questions (Part: ${selectedPartLabel}).`;
 
       if (this.lastQuizErrors.length > 0) {
@@ -286,9 +254,9 @@ export class StudyApp {
       return;
     }
 
-    const selectedDeckLabel =
-      this.uiSettings.selectedDeck === ALL_DECKS_VALUE ? "All decks" : this.uiSettings.selectedDeck;
-    const summary = `Showing ${this.cards.length} of ${this.allCards.length} cards (Deck: ${selectedDeckLabel}).`;
+    const selectedPartLabel =
+      this.uiSettings.selectedPart === ALL_PARTS_VALUE ? "All parts" : this.uiSettings.selectedPart;
+    const summary = `Showing ${this.cards.length} of ${this.allCards.length} cards (Part: ${selectedPartLabel}).`;
 
     if (errors.length > 0) {
       this.elements.sourceStatus.textContent =
@@ -321,10 +289,8 @@ export class StudyApp {
     this.lastSourceCardCount = sourceCards.length;
     this.lastCustomCardCount = customCards.length;
     this.lastQuizQuestionCount = quizResult.questions.length;
-    this.updateDeckOptions();
-    this.updateQuizPartOptions();
-    this.applyDeckFilter();
-    this.applyQuizPartFilter();
+    this.updatePartOptions();
+    this.applySelectedPartFilter();
     this.updateSourceStatus(this.lastErrors, this.lastSourceCardCount, this.lastCustomCardCount);
   }
 

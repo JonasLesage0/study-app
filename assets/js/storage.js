@@ -1,4 +1,4 @@
-import { ALL_DECKS_VALUE, ALL_PARTS_VALUE } from "./config.js";
+import { ALL_PARTS_VALUE } from "./config.js";
 
 export class CustomCardStore {
   constructor(storageKey) {
@@ -38,9 +38,8 @@ export class UiSettingsStore {
   get() {
     const defaultSettings = {
       showDeckTools: false,
-      selectedDeck: ALL_DECKS_VALUE,
       selectedMode: "flashcards",
-      selectedQuizPart: ALL_PARTS_VALUE,
+      selectedPart: ALL_PARTS_VALUE,
       disableFlipAnimation: true,
     };
 
@@ -51,20 +50,25 @@ export class UiSettingsStore {
       }
 
       const parsed = JSON.parse(raw);
+      let selectedPart = defaultSettings.selectedPart;
+
+      if (typeof parsed?.selectedPart === "string" && parsed.selectedPart.trim().length > 0) {
+        selectedPart = parsed.selectedPart;
+      } else if (typeof parsed?.selectedDeck === "string" && parsed.selectedDeck.trim().length > 0) {
+        selectedPart = parsed.selectedDeck;
+      } else if (
+        typeof parsed?.selectedQuizPart === "string" && parsed.selectedQuizPart.trim().length > 0
+      ) {
+        selectedPart = parsed.selectedQuizPart;
+      }
+
       return {
         showDeckTools:
           typeof parsed?.showDeckTools === "boolean"
             ? parsed.showDeckTools
             : defaultSettings.showDeckTools,
-        selectedDeck:
-          typeof parsed?.selectedDeck === "string" && parsed.selectedDeck.trim().length > 0
-            ? parsed.selectedDeck
-            : defaultSettings.selectedDeck,
         selectedMode: parsed?.selectedMode === "quizzes" ? "quizzes" : defaultSettings.selectedMode,
-        selectedQuizPart:
-          typeof parsed?.selectedQuizPart === "string" && parsed.selectedQuizPart.trim().length > 0
-            ? parsed.selectedQuizPart
-            : defaultSettings.selectedQuizPart,
+        selectedPart,
         disableFlipAnimation:
           typeof parsed?.disableFlipAnimation === "boolean"
             ? parsed.disableFlipAnimation
