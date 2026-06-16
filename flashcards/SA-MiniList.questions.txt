@@ -1,0 +1,16 @@
+1. Publisher as Domain Event Listener
+AmqpTopicPublisher implements IDomainEventListener. Why is this an interesting hexagonal choice for bridging domain events to integration events?
+
+2. Driving (primary) vs Driven (secondary) Ports & Adapters
+Given the infrastructure modules: WebAPI, Messaging, Persistency, AI Agent. Assign relevant tags to each module.
+Tags: Driven, Driving, Primary Adapter, Secondary Adapter, Primary Port, Secondary Port, Triggers use case, Invoked by use case
+When marking the tags Driven or Driving, explain in one sentence why you assigned that tag to the module.
+
+3. Goldilocks Granularity
+What are the symptoms of services that are too small vs too large, and how does workflow alignment help find the “just right” service boundary?
+
+4. Controller in Ports & Adapters
+What is a controller in the context of Ports & Adapters? What is its responsibility? What does it trigger, and what kind of adapter triggers a controller?
+
+5. Lifetime Decisions
+Explain the difference between Singleton, Scoped, and Transient lifetimes. When should each be used?

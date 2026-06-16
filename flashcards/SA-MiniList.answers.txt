@@ -1,0 +1,14 @@
+1. Publisher as Domain Event Listener
+Implementing IDomainEventListener via AmqpTopicPublisher creates a driven adapter that bridges the application core to external infrastructure. This keeps the domain layer "blissfully ignorant" of technical details (messaging mechanics) like AMQP protocols or broker details (e.g., exchanges, routing keys, and queues). As a listener, the publisher translates internal Domain Events (state changes) into external Integration Events (messages for other services) only after the Unit of Work has successfully committed the database transaction.
+
+2. Driving (primary) vs Driven (secondary) Ports & Adapters
+Driving Adapters (Primary, inbound, at the front door): Web API controllers and Messaging Controllers (Consumers). The outside triggers use cases (app). Driven Adapters (Secondary, outbound, at the back door): Messaging Domain Publishers and Repositories/Persistency. The inside (use case from app) triggers these for tasks like saving data (in repos) or sending messages. An AI Agent is a driven adapter because it's invoked by use cases for external data processing.
+
+3. Goldilocks Granularity
+Too Small (Nano-services): Symptoms include endless network chatter, complex event chains that are hard to trace, and high overhead for managing many tiny deployment units. Too Large: The primary symptom is a distributed monolith, where services are logically coupled such that they cannot be deployed independently. Just Right: Finding the balance requires workflow alignment. Tracing a real business workflow, such as "Create subscription," reveals if a service boundary is correct; if that single action requires data from five different services, those services are likely split by entities rather than transaction boundaries and should perhaps be merged.
+
+4. Controller in Ports & Adapters
+In ports and adapters, a controller is a driving adapter at the boundary responsible for protocol translation, converting external stimuli like HTTP requests and AMQP messages into an application input. Then the use case gets triggered via a driving port.
+
+5. Lifetime Decisions
+Publishers and message brokers are typically registered as Singletons because they manage process infrastructure, such as persistent connections to external brokers, that should last for the entire application lifetime. Conversely, use cases, repositories, and the Unit of Work are registered as Scoped to ensure they have a fresh, isolated state and a consistent transaction boundary for each individual business operation or request. Use Transient for a new instance every time requested. Long-running listeners (e.g., ScanForExpiredPaymentsJob) typically run as hosted/background services.
