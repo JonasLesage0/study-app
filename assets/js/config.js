@@ -1,6 +1,11 @@
 export const APP_CONFIG = {
   sourceFiles: ["flashcards/Deelexamen"],
-  qaSourceBases: ["flashcards/Infrastructure", "flashcards/Main", "flashcards/DistributedServices"],
+  qaSourceBases: [
+    "flashcards/Infrastructure",
+    "flashcards/Main",
+    "flashcards/DistributedServices",
+    "flashcards/SA-MiniList",
+  ],
   quizFiles: ["quizzes/examenvragen-it-law.md"],
   customCardsStorageKey: "flashcards.custom.cards.v1",
   uiSettingsStorageKey: "flashcards.ui.settings.v1",
